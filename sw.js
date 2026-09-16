@@ -7,7 +7,7 @@ const ASSETS = [
   './src/repository/indexedDbVocabularyRepository.js',
   './src/services/answerEvaluationService.js', './src/services/learningEngine.js',
   './src/services/speechService.js', './src/services/multipleChoiceService.js',
-  './src/services/csvVocabularyService.js'
+  './src/services/csvVocabularyService.js', './src/services/progressBackupService.js'
 ];
 
 self.addEventListener('install', event => {
