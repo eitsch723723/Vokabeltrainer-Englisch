@@ -1,37 +1,72 @@
 # Vokabeltrainer-Englisch
 
-Statische Englisch–Deutsch-Vokabeltrainer-Web-App für GitHub Pages. Alle Nutzerdaten werden ausschließlich lokal im Browser gespeichert.
+Statische Englisch–Deutsch-Vokabeltrainer-Web-App für GitHub Pages. Die Vokabelsammlung wird zentral als CSV-Datei im Repository gepflegt; der persönliche Lernstand bleibt ausschließlich lokal im Browser.
+
+## Vokabelquelle
+
+Die App lädt beim Start:
+
+`data/vocabulary.csv`
+
+Die CSV ist die maßgebliche Quelle für alle Vokabeltexte. In der App selbst können Vokabeln weder hinzugefügt noch bearbeitet, gelöscht oder per Foto importiert werden.
+
+Schema:
+
+```csv
+id,english,german,english_alternatives,german_alternatives
+v0001,house,Haus,,
+v0002,to begin,anfangen,,beginnen
+```
+
+Regeln:
+
+- `id` muss eindeutig und dauerhaft stabil sein.
+- `english` und `german` sind Pflichtfelder.
+- Mehrere alternative korrekte Antworten werden innerhalb der jeweiligen Alternativspalte mit `|` getrennt.
+- CSV-Felder mit Kommas müssen in doppelte Anführungszeichen gesetzt werden.
+- Wird eine vorhandene Vokabel korrigiert, bleibt ihre ID unverändert. Dadurch bleibt der lokale Lernstand erhalten.
+- Wird eine ID aus der CSV entfernt, verschwindet diese Vokabel beim nächsten Abgleich auch aus der App.
+
+## Workflow für neue Vokabeln
+
+Der vorgesehene Pflegeprozess ist:
+
+1. Lehrbuchseite oder Vokabelliste als Bild in ChatGPT hochladen.
+2. ChatGPT liest die englisch-deutschen Zuordnungen aus dem Bild aus.
+3. Bereits im Bild vorhandene Zuordnungen gelten als maßgebliche Übersetzungen und dürfen nicht eigenständig durch andere Übersetzungen ersetzt werden.
+4. Unsichere oder nicht eindeutig lesbare Einträge dürfen nicht stillschweigend geraten werden.
+5. ChatGPT prüft die bestehende `data/vocabulary.csv`, vermeidet doppelte Einträge und vergibt für neue Vokabeln neue stabile IDs.
+6. ChatGPT aktualisiert die CSV im GitHub-Repository.
+7. Die App lädt die aktualisierte CSV beim nächsten Start oder über die Schaltfläche „Aktualisieren“.
+
+Dieser Ablauf benötigt keine API-Schlüssel in der Web-App und hält Foto-/OCR-Logik vollständig aus dem ausgelieferten Client heraus.
 
 ## Architektur
 
-Die Anwendung nutzt bewusst keinen Build-Schritt und keine Framework-Abhängigkeit. Das reduziert Fehlerquellen auf GitHub Pages und in Safari.
+Die Anwendung nutzt bewusst keinen Build-Schritt und keine Framework-Abhängigkeit.
 
+- `data/vocabulary.csv`: zentrale Vokabelquelle
 - `src/domain/`: versioniertes Vokabel-Datenmodell und Migrationen
-- `src/repository/`: IndexedDB-Persistenz hinter einer Repository-Schicht
-- `src/services/`: Antwortbewertung, Lernalgorithmus, Duplikate, Übersetzungsvorschläge, OCR, Aussprache und Backup
+- `src/repository/`: IndexedDB-Persistenz für lokalen Lernstand
+- `src/services/csvVocabularyService.js`: CSV-Validierung und Synchronisierung mit lokalem Lernstand
+- `src/services/answerEvaluationService.js`: Antwortnormalisierung und Tippfehlertoleranz
+- `src/services/learningEngine.js`: deterministischer Spaced-Repetition-Algorithmus
+- `src/services/multipleChoiceService.js`: Multiple-Choice-Antworten
+- `src/services/speechService.js`: Aussprache über SpeechSynthesis
 - `src/app.js`: UI- und Application-Orchestrierung
-- `tests/`: deterministische Tests der fachlichen Logik
 - `sw.js` / `manifest.webmanifest`: PWA-Grundstruktur mit relativen Pfaden
 
-## Datenmodell und Lernlogik
+## Datenintegrität
 
-Jede Vokabel besitzt getrennte Lernstände für Englisch → Deutsch und Deutsch → Englisch. Gespeichert werden Abfragen, richtige/nahezu richtige/falsche Antworten, Serie, letzte Abfrage, nächste Wiederholung und Wiederholungsintervall. Der Spaced-Repetition-Algorithmus ist bewusst einfach und deterministisch.
+Bei jedem erfolgreichen CSV-Abgleich wird die lokale Vokabelkopie an die Repository-Datei angeglichen. Nur Lernstand und Lernhistorie werden anhand der stabilen ID übernommen. Text, Übersetzungen und Alternativen stammen immer aus der aktuellen CSV.
 
-Antworten werden normalisiert. Groß-/Kleinschreibung und überflüssige Leerzeichen werden ignoriert. Explizit hinterlegte Alternativen werden als korrekt akzeptiert. Kleine Levenshtein-Abstände werden abhängig von der Wortlänge als „fast richtig“ bewertet; sehr kurze Wörter werden nicht großzügig toleriert.
+Kann die CSV vorübergehend nicht geladen werden, verwendet die App die zuletzt erfolgreich synchronisierte lokale Kopie. Die CSV wird im Service Worker gezielt network-first behandelt, damit Änderungen im Repository nicht durch einen alten Cache verdeckt werden.
 
-## Fotoimport
+## Lernlogik
 
-Die OCR läuft lokal im Browser mit Tesseract.js 5.1.1. Die Bibliothek und Sprachmodelle werden beim ersten OCR-Einsatz über ein CDN geladen. Es gibt keinen API-Schlüssel und kein eigenes Backend. Nach OCR wird immer eine Prüfansicht angezeigt; erkannte Paare werden erst nach Nutzerbestätigung gespeichert.
+Englisch → Deutsch und Deutsch → Englisch besitzen getrennte Lernstände. Gespeichert werden Abfragen, richtige/nahezu richtige/falsche Antworten, Serie, letzte Abfrage, nächste Wiederholung und Wiederholungsintervall.
 
-Da OCR bei Fotos, Tabellen und Handschrift nie vollständig zuverlässig ist, ist die Prüfansicht Bestandteil des Datenintegritätskonzepts. Wenn OCR nicht verfügbar ist, kann dieselbe Prüftabelle manuell verwendet werden.
-
-## Übersetzungsvorschläge
-
-Version 1 nutzt bewusst nur einen kleinen lokalen Grundwortschatz sowie bereits gespeicherte Vokabeln. So werden keine geheimen API-Schlüssel benötigt und kein unsicherer Übersetzungsdienst aus dem Browser aufgerufen. Vorschläge sind sichtbar gekennzeichnet und werden erst nach Bestätigung gespeichert.
-
-## Backup
-
-Der Export erzeugt versioniertes JSON mit Vokabeln und Lernständen. Beim Import werden Format und Datenschema validiert. „Sicher zusammenführen“ ergänzt standardmäßig nur neue IDs. Ein vollständiges Ersetzen lokaler Daten erfordert eine separate explizite Bestätigung.
+Groß-/Kleinschreibung und überflüssige Leerzeichen werden ignoriert. Explizit in der CSV hinterlegte Alternativen werden akzeptiert. Kleine Tippfehler können als „fast richtig“ bewertet werden.
 
 ## Tests
 
@@ -40,12 +75,10 @@ npm test
 npm run check
 ```
 
-Die Tests decken Antwortnormalisierung, Tippfehlertoleranz, Alternativübersetzungen, getrennte Lernrichtungen, Wiederholungsplanung und -priorisierung, Duplikaterkennung, Multiple Choice, OCR-Parsing, Migrationen und Backup-Validierung ab.
+Die Tests decken Antwortnormalisierung, Tippfehlertoleranz, Alternativübersetzungen, getrennte Lernrichtungen, Wiederholungsplanung, Multiple Choice, CSV-Parsing, doppelte IDs, Synchronisierung mit Lernstanderhalt, Löschungen aus der Repository-Quelle und Datenmigrationen ab.
 
 ## GitHub Pages
 
-Die App verwendet ausschließlich relative Pfade und benötigt keine serverseitigen Routen. Für GitHub Pages kann der Repository-Root des `main`-Branches als Quelle verwendet werden. Ein Reload auf der Startseite funktioniert ohne Server-Routing-Fallback.
+Die App verwendet ausschließlich relative Pfade und benötigt keine serverseitigen Routen. Die Veröffentlichung erfolgt über `.github/workflows/pages.yml`.
 
-## Teststatus
-
-Vor dem Commit wurden 14 automatisierte Logiktests und Syntaxprüfungen erfolgreich ausgeführt. Ein versuchter Headless-Chromium-Smoke-Test konnte in der verfügbaren Ausführungsumgebung nicht gestartet werden und gilt daher nicht als bestandener Browser-Test. Reale iPhone-/iPad-Tests wurden nicht durchgeführt.
+Reale iPhone-/iPad-Tests werden nur dann als durchgeführt dokumentiert, wenn sie tatsächlich auf den Geräten ausgeführt wurden.
