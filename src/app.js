@@ -1,7 +1,7 @@
 import { IndexedDbVocabularyRepository } from './repository/indexedDbVocabularyRepository.js';
 import { DIRECTIONS } from './domain/vocabulary.js';
 import { evaluateAnswer, normalizeAnswer } from './services/answerEvaluationService.js';
-import { selectNextVocabulary, updateProgress, masteryLevel } from './services/learningEngine.js';
+import { selectNextVocabulary, updateProgress, masteryLevel, resolveQuestionDirection, RANDOM_DIRECTION } from './services/learningEngine.js';
 import { speakEnglish } from './services/speechService.js';
 import { buildChoices } from './services/multipleChoiceService.js';
 import { fetchVocabularyCsv, mergeRepositoryVocabulary } from './services/csvVocabularyService.js';
@@ -20,7 +20,8 @@ const state = {
   learning: {
     active: false,
     mode: 'input',
-    direction: DIRECTIONS.EN_DE,
+    directionSelection: RANDOM_DIRECTION,
+    questionDirection: null,
     currentId: null,
     feedback: null
   }
@@ -68,6 +69,7 @@ async function syncVocabulary(cached = state.vocabularies) {
   if (state.learning.currentId && !state.vocabularies.some(v => v.id === state.learning.currentId)) {
     state.learning.active = false;
     state.learning.currentId = null;
+    state.learning.questionDirection = null;
     state.learning.feedback = null;
   }
 }
@@ -113,27 +115,29 @@ function renderLearn() {
 
   if (!state.learning.active) {
     return `<section class="learning-shell"><div class="card stack">
-      <div><h2>Lernen</h2><p class="muted">Wähle Lernmodus und Richtung. Der Lernstand wird für beide Richtungen getrennt lokal gespeichert.</p></div>
+      <div><h2>Lernen</h2><p class="muted">Wähle Lernmodus und Richtung. Bei „Zufällig“ wird die Abfragerichtung für jede neue Vokabel neu gewählt. Der Lernstand wird für beide Richtungen getrennt lokal gespeichert.</p></div>
       <label>Lernmodus<select id="learning-mode"><option value="input" ${state.learning.mode === 'input' ? 'selected' : ''}>Übersetzung eingeben</option><option value="choice" ${state.learning.mode === 'choice' ? 'selected' : ''}>Multiple Choice</option></select></label>
-      <label>Lernrichtung<select id="learning-direction"><option value="en-de" ${state.learning.direction === 'en-de' ? 'selected' : ''}>Englisch → Deutsch</option><option value="de-en" ${state.learning.direction === 'de-en' ? 'selected' : ''}>Deutsch → Englisch</option></select></label>
+      <label>Lernrichtung<select id="learning-direction"><option value="random" ${state.learning.directionSelection === RANDOM_DIRECTION ? 'selected' : ''}>Zufällig</option><option value="en-de" ${state.learning.directionSelection === DIRECTIONS.EN_DE ? 'selected' : ''}>Englisch → Deutsch</option><option value="de-en" ${state.learning.directionSelection === DIRECTIONS.DE_EN ? 'selected' : ''}>Deutsch → Englisch</option></select></label>
       ${state.vocabularies.length < 3 ? '<p class="small muted">Für sinnvolles Multiple Choice werden mindestens 3 Vokabeln benötigt.</p>' : ''}
       <button class="button" id="start-learning">Lernen starten</button>
     </div></section>`;
   }
 
   const current = currentVocabulary();
-  if (!current) {
+  const direction = state.learning.questionDirection;
+  if (!current || !direction) {
     state.learning.active = false;
+    state.learning.questionDirection = null;
     return renderLearn();
   }
 
-  const direction = state.learning.direction;
   const question = direction === DIRECTIONS.EN_DE ? current.english : current.german;
   const correct = acceptedAnswers(current, direction)[0];
   const showSpeech = direction === DIRECTIONS.EN_DE || state.learning.feedback;
+  const directionBadge = direction === DIRECTIONS.EN_DE ? 'E→D' : 'D→E';
 
   return `<section class="learning-shell"><div class="card stack">
-    <div class="row spread"><span class="badge">${state.learning.mode === 'input' ? 'Eingabe' : 'Multiple Choice'}</span><button class="button ghost" id="stop-learning">Beenden</button></div>
+    <div class="row spread"><span class="badge">${state.learning.mode === 'input' ? 'Eingabe' : 'Multiple Choice'} · ${directionBadge}</span><button class="button ghost" id="stop-learning">Beenden</button></div>
     <div class="question"><div class="question-label">${direction === DIRECTIONS.EN_DE ? 'Übersetze ins Deutsche' : 'Übersetze ins Englische'}</div><div class="question-word">${escapeHtml(question)}</div>${showSpeech ? '<button class="icon-button" id="speak-current" aria-label="Englisches Wort vorlesen" title="Vorlesen">▶</button>' : ''}</div>
     ${state.learning.feedback ? renderFeedback(state.learning.feedback, correct) : renderAnswerControls(current)}
   </div></section>`;
@@ -144,7 +148,7 @@ function renderAnswerControls(current) {
     return `<form id="answer-form" class="answer-form"><label class="small">Deine Antwort<input id="answer-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" required></label><button class="button" type="submit">Prüfen</button></form>`;
   }
 
-  const choices = buildChoices(current, state.vocabularies, state.learning.direction, 4);
+  const choices = buildChoices(current, state.vocabularies, state.learning.questionDirection, 4);
   return `<div class="mc-grid">${choices.map(choice => `<button class="button secondary" data-choice="${escapeAttribute(choice)}">${escapeHtml(choice)}</button>`).join('')}</div>`;
 }
 
@@ -225,7 +229,7 @@ function bindLearnEvents() {
   const start = document.querySelector('#start-learning');
   if (start) start.addEventListener('click', () => {
     const mode = document.querySelector('#learning-mode').value;
-    const direction = document.querySelector('#learning-direction').value;
+    const directionSelection = document.querySelector('#learning-direction').value;
 
     if (mode === 'choice' && state.vocabularies.length < 3) {
       state.message = { kind: 'error', text: 'Für Multiple Choice werden mindestens 3 Vokabeln benötigt.' };
@@ -233,17 +237,20 @@ function bindLearnEvents() {
       return;
     }
 
+    const questionDirection = resolveQuestionDirection(directionSelection);
     state.learning.mode = mode;
-    state.learning.direction = direction;
+    state.learning.directionSelection = directionSelection;
+    state.learning.questionDirection = questionDirection;
     state.learning.active = true;
     state.learning.feedback = null;
-    state.learning.currentId = selectNextVocabulary(state.vocabularies, direction)?.id ?? null;
+    state.learning.currentId = selectNextVocabulary(state.vocabularies, questionDirection)?.id ?? null;
     state.message = null;
     render();
   });
 
   document.querySelector('#stop-learning')?.addEventListener('click', () => {
     state.learning.active = false;
+    state.learning.questionDirection = null;
     state.learning.feedback = null;
     render();
   });
@@ -267,8 +274,10 @@ function bindLearnEvents() {
   }));
 
   document.querySelector('#next-question')?.addEventListener('click', () => {
-    const next = selectNextVocabulary(state.vocabularies, state.learning.direction, new Date(), state.learning.currentId)
-      ?? selectNextVocabulary(state.vocabularies, state.learning.direction);
+    const nextDirection = resolveQuestionDirection(state.learning.directionSelection);
+    const next = selectNextVocabulary(state.vocabularies, nextDirection, new Date(), state.learning.currentId)
+      ?? selectNextVocabulary(state.vocabularies, nextDirection);
+    state.learning.questionDirection = nextDirection;
     state.learning.currentId = next?.id ?? null;
     state.learning.feedback = null;
     render();
@@ -298,10 +307,11 @@ function bindProgressEvents() {
 
 async function evaluateCurrentAnswer(answer) {
   const current = currentVocabulary();
-  if (!current || state.learning.feedback) return;
+  const direction = state.learning.questionDirection;
+  if (!current || !direction || state.learning.feedback) return;
 
-  const evaluation = evaluateAnswer(answer, acceptedAnswers(current, state.learning.direction));
-  const updated = updateProgress(current, state.learning.direction, evaluation.result);
+  const evaluation = evaluateAnswer(answer, acceptedAnswers(current, direction));
+  const updated = updateProgress(current, direction, evaluation.result);
   await repo.put(updated);
   state.vocabularies = state.vocabularies.map(v => v.id === updated.id ? updated : v);
   state.learning.feedback = evaluation;
