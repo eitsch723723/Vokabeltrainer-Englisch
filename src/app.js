@@ -33,12 +33,13 @@ async function init() {
     throw new Error('Dieser Browser unterstützt IndexedDB nicht. Der Lernstand kann daher nicht sicher gespeichert werden.');
   }
 
-  const cached = await repo.list();
+  const allCached = await repo.list();
+  const cached = allCached.filter(isRepositoryVocabulary);
   try {
     await syncVocabulary(cached);
   } catch (error) {
     if (!cached.length) throw error;
-    state.vocabularies = cached;
+    state.vocabularies = sortVocabulary(cached);
     state.sourceStatus = 'cache';
     state.message = {
       kind: 'info',
@@ -51,9 +52,16 @@ async function init() {
 }
 
 async function syncVocabulary(cached = state.vocabularies) {
+  const repositoryCached = cached.filter(isRepositoryVocabulary);
   const source = await fetchVocabularyCsv(CSV_URL);
-  const merged = mergeRepositoryVocabulary(source, cached);
-  await repo.replaceAll(merged);
+  const merged = mergeRepositoryVocabulary(source, repositoryCached);
+  const activeIds = new Set(merged.map(vocabulary => vocabulary.id));
+
+  await repo.putMany(merged);
+  for (const oldVocabulary of repositoryCached) {
+    if (!activeIds.has(oldVocabulary.id)) await repo.delete(oldVocabulary.id);
+  }
+
   state.vocabularies = sortVocabulary(merged);
   state.sourceStatus = 'repository';
 
@@ -335,7 +343,7 @@ async function restoreProgress(event) {
   try {
     const parsed = JSON.parse(await file.text());
     const result = applyProgressBackup(state.vocabularies, parsed);
-    await repo.replaceAll(result.vocabularies);
+    await repo.putMany(result.vocabularies);
     state.vocabularies = sortVocabulary(result.vocabularies);
     const extra = result.unmatched ? ` ${result.unmatched} Einträge passten zu keiner aktuellen Vokabel-ID und wurden ignoriert.` : '';
     state.message = { kind: 'success', text: `${result.restored} Lernstände wiederhergestellt.${extra}` };
@@ -354,6 +362,10 @@ function acceptedAnswers(vocabulary, direction) {
     return [vocabulary.german, ...(vocabulary.alternatives?.german ?? [])];
   }
   return [vocabulary.english, ...(vocabulary.alternatives?.english ?? [])];
+}
+
+function isRepositoryVocabulary(vocabulary) {
+  return vocabulary?.provenance?.input === 'repository-csv';
 }
 
 function masteryLabel(level) {
