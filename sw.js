@@ -1,4 +1,4 @@
-const CACHE = 'vokabeltrainer-v2';
+const CACHE = 'vokabeltrainer-v3';
 const VOCABULARY_PATH = new URL('./data/vocabulary.csv', self.registration.scope).pathname;
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest', './icon.svg',
