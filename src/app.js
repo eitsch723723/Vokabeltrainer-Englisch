@@ -5,6 +5,7 @@ import { selectNextVocabulary, updateProgress, masteryLevel } from './services/l
 import { speakEnglish } from './services/speechService.js';
 import { buildChoices } from './services/multipleChoiceService.js';
 import { fetchVocabularyCsv, mergeRepositoryVocabulary } from './services/csvVocabularyService.js';
+import { createProgressBackup, applyProgressBackup } from './services/progressBackupService.js';
 
 const CSV_URL = './data/vocabulary.csv';
 const repo = new IndexedDbVocabularyRepository();
@@ -163,10 +164,11 @@ function renderVocabularyList() {
 function renderVocabularyItem(v) {
   const en = masteryLevel(v.learning[DIRECTIONS.EN_DE]);
   const de = masteryLevel(v.learning[DIRECTIONS.DE_EN]);
-  const alternatives = [...(v.alternatives?.german ?? []), ...(v.alternatives?.english ?? [])];
+  const enAlternatives = v.alternatives?.english ?? [];
+  const deAlternatives = v.alternatives?.german ?? [];
 
   return `<article class="vocab-item">
-    <div class="vocab-pair"><strong>${escapeHtml(v.english)}</strong><span>${escapeHtml(v.german)}</span>${alternatives.length ? `<div class="small muted">Alternativen: ${escapeHtml(alternatives.join(', '))}</div>` : ''}<div class="badges"><span class="badge ${en}">E→D: ${masteryLabel(en)}</span><span class="badge ${de}">D→E: ${masteryLabel(de)}</span></div></div>
+    <div class="vocab-pair"><strong>${escapeHtml(v.english)}</strong><span>${escapeHtml(v.german)}</span>${enAlternatives.length ? `<div class="small muted">Englische Alternativen: ${escapeHtml(enAlternatives.join(', '))}</div>` : ''}${deAlternatives.length ? `<div class="small muted">Deutsche Alternativen: ${escapeHtml(deAlternatives.join(', '))}</div>` : ''}<div class="badges"><span class="badge ${en}">E→D: ${masteryLabel(en)}</span><span class="badge ${de}">D→E: ${masteryLabel(de)}</span></div></div>
     <div class="row"><button class="icon-button" data-speak="${escapeAttribute(v.id)}" aria-label="${escapeAttribute(v.english)} vorlesen">▶</button></div>
   </article>`;
 }
@@ -191,6 +193,7 @@ function renderProgress() {
     <div><h2>Fortschritt</h2><p class="muted">Der Lernstand wird ausschließlich lokal in diesem Browser gespeichert. Die Vokabeltexte selbst kommen aus dem Repository.</p></div>
     <div class="grid-4">${stat(state.vocabularies.length, 'Vokabeln')}${stat(counts.new, 'Neu')}${stat(counts.difficult, 'Schwieriger')}${stat(counts.good, 'Gut beherrscht')}</div>
     <div class="card"><div class="stat-number">${todayActivity}</div><div class="stat-label">Abfragen heute</div></div>
+    <div class="card stack"><div><h3>Lernstand sichern</h3><p class="muted small">Die Sicherung enthält nur Lernstände und Historie anhand der Vokabel-IDs. Sie kann keine Vokabeltexte in die App einspielen oder verändern.</p></div><div class="row"><button class="button" id="export-progress">Lernstand exportieren</button><label class="button secondary file-button">Lernstand wiederherstellen<input id="progress-file" type="file" accept="application/json,.json" hidden></label></div></div>
   </section>`;
 }
 
@@ -207,6 +210,7 @@ function bindViewEvents() {
 
   if (state.view === 'learn') bindLearnEvents();
   if (state.view === 'vocab') bindVocabularyEvents();
+  if (state.view === 'progress') bindProgressEvents();
 }
 
 function bindLearnEvents() {
@@ -279,6 +283,11 @@ function bindVocabularyEvents() {
   }));
 }
 
+function bindProgressEvents() {
+  document.querySelector('#export-progress')?.addEventListener('click', exportProgress);
+  document.querySelector('#progress-file')?.addEventListener('change', restoreProgress);
+}
+
 async function evaluateCurrentAnswer(answer) {
   const current = currentVocabulary();
   if (!current || state.learning.feedback) return;
@@ -300,6 +309,38 @@ async function refreshVocabulary() {
     state.message = { kind: 'success', text: `${state.vocabularies.length} Vokabeln aus dem Repository aktualisiert.` };
   } catch (error) {
     state.message = { kind: 'error', text: `Aktualisierung fehlgeschlagen: ${error.message}` };
+  }
+  render();
+}
+
+function exportProgress() {
+  const backup = createProgressBackup(state.vocabularies);
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `vokabeltrainer-lernstand-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  state.message = { kind: 'success', text: 'Lernstand wurde exportiert.' };
+  render();
+}
+
+async function restoreProgress(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const parsed = JSON.parse(await file.text());
+    const result = applyProgressBackup(state.vocabularies, parsed);
+    await repo.replaceAll(result.vocabularies);
+    state.vocabularies = sortVocabulary(result.vocabularies);
+    const extra = result.unmatched ? ` ${result.unmatched} Einträge passten zu keiner aktuellen Vokabel-ID und wurden ignoriert.` : '';
+    state.message = { kind: 'success', text: `${result.restored} Lernstände wiederhergestellt.${extra}` };
+  } catch (error) {
+    state.message = { kind: 'error', text: `Lernstand konnte nicht wiederhergestellt werden: ${error.message}` };
   }
   render();
 }
