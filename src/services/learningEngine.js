@@ -1,6 +1,7 @@
 import { DIRECTIONS } from '../domain/vocabulary.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+export const RANDOM_DIRECTION = 'random';
 
 function intervalFor(result, previous) {
   if (result === 'wrong') return 2 / 24;
@@ -8,6 +9,14 @@ function intervalFor(result, previous) {
   if (previous.streak <= 0) return 1;
   if (previous.streak === 1) return 3;
   return Math.min(30, Math.max(5, (previous.intervalDays || 3) * 2));
+}
+
+export function resolveQuestionDirection(selection, randomValue = Math.random()) {
+  if (selection === RANDOM_DIRECTION) {
+    return randomValue < 0.5 ? DIRECTIONS.EN_DE : DIRECTIONS.DE_EN;
+  }
+  if ([DIRECTIONS.EN_DE, DIRECTIONS.DE_EN].includes(selection)) return selection;
+  throw new Error('Ungültige Lernrichtung.');
 }
 
 export function updateProgress(vocabulary, direction, result, now = new Date()) {
