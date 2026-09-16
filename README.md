@@ -49,6 +49,7 @@ Die Anwendung nutzt bewusst keinen Build-Schritt und keine Framework-Abhängigke
 - `src/domain/`: versioniertes Vokabel-Datenmodell und Migrationen
 - `src/repository/`: IndexedDB-Persistenz für lokalen Lernstand
 - `src/services/csvVocabularyService.js`: CSV-Validierung und Synchronisierung mit lokalem Lernstand
+- `src/services/progressBackupService.js`: Sicherung und Wiederherstellung ausschließlich des Lernstands
 - `src/services/answerEvaluationService.js`: Antwortnormalisierung und Tippfehlertoleranz
 - `src/services/learningEngine.js`: deterministischer Spaced-Repetition-Algorithmus
 - `src/services/multipleChoiceService.js`: Multiple-Choice-Antworten
@@ -61,6 +62,10 @@ Die Anwendung nutzt bewusst keinen Build-Schritt und keine Framework-Abhängigke
 Bei jedem erfolgreichen CSV-Abgleich wird die lokale Vokabelkopie an die Repository-Datei angeglichen. Nur Lernstand und Lernhistorie werden anhand der stabilen ID übernommen. Text, Übersetzungen und Alternativen stammen immer aus der aktuellen CSV.
 
 Kann die CSV vorübergehend nicht geladen werden, verwendet die App die zuletzt erfolgreich synchronisierte lokale Kopie. Die CSV wird im Service Worker gezielt network-first behandelt, damit Änderungen im Repository nicht durch einen alten Cache verdeckt werden.
+
+## Lernstand sichern
+
+Die App kann den lokalen Lernstand als JSON exportieren und später wiederherstellen. Diese Datei enthält nur Vokabel-IDs, Lernstände und Lernhistorie. Sie enthält keine Vokabeltexte und kann die Repository-Vokabeln weder anlegen noch verändern. Beim Wiederherstellen werden nur IDs übernommen, die auch in der aktuellen Repository-CSV vorhanden sind.
 
 ## Lernlogik
 
@@ -75,7 +80,7 @@ npm test
 npm run check
 ```
 
-Die Tests decken Antwortnormalisierung, Tippfehlertoleranz, Alternativübersetzungen, getrennte Lernrichtungen, Wiederholungsplanung, Multiple Choice, CSV-Parsing, doppelte IDs, Synchronisierung mit Lernstanderhalt, Löschungen aus der Repository-Quelle und Datenmigrationen ab.
+Die Tests decken Antwortnormalisierung, Tippfehlertoleranz, Alternativübersetzungen, getrennte Lernrichtungen, Wiederholungsplanung, Multiple Choice, CSV-Parsing, doppelte IDs, Synchronisierung mit Lernstanderhalt, Löschungen aus der Repository-Quelle, progress-only Backup und Datenmigrationen ab.
 
 ## GitHub Pages
 
