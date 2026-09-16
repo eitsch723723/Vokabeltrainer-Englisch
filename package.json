@@ -1,0 +1,10 @@
+{
+  "name": "vokabeltrainer-englisch",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "check": "node --check src/app.js && node --check src/domain/vocabulary.js && node --check src/repository/indexedDbVocabularyRepository.js && node --check src/services/answerEvaluationService.js && node --check src/services/learningEngine.js && node --check src/services/importService.js"
+  }
+}
