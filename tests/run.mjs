@@ -5,6 +5,7 @@ import { migrateVocabulary } from '../src/domain/migrations.js';
 import { updateProgress, priorityScore, selectNextVocabulary } from '../src/services/learningEngine.js';
 import { buildChoices } from '../src/services/multipleChoiceService.js';
 import { parseVocabularyCsv, mergeRepositoryVocabulary } from '../src/services/csvVocabularyService.js';
+import { createProgressBackup, applyProgressBackup } from '../src/services/progressBackupService.js';
 
 if (!globalThis.crypto?.randomUUID) {
   const { randomUUID } = await import('node:crypto');
@@ -94,6 +95,22 @@ test('repository removal does not retain obsolete cached vocabulary', () => {
   const source = parseVocabularyCsv('id,english,german\nv001,house,Haus\n');
   const merged = mergeRepositoryVocabulary(source, cached);
   assert.deepEqual(merged.map(v => v.id), ['v001']);
+});
+
+test('progress backup restores learning without changing repository vocabulary text', () => {
+  const learned = updateProgress(
+    createVocabulary({ id: 'v001', english: 'house', german: 'Haus' }),
+    DIRECTIONS.EN_DE,
+    'correct',
+    new Date('2026-09-16T12:00:00Z')
+  );
+  const backup = createProgressBackup([learned]);
+  const current = [createVocabulary({ id: 'v001', english: 'the house', german: 'das Haus' })];
+  const result = applyProgressBackup(current, backup);
+  assert.equal(result.vocabularies[0].english, 'the house');
+  assert.equal(result.vocabularies[0].german, 'das Haus');
+  assert.equal(result.vocabularies[0].learning[DIRECTIONS.EN_DE].attempts, 1);
+  assert.equal(result.restored, 1);
 });
 
 test('migrates legacy version 0', () => {
