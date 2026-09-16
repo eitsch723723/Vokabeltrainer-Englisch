@@ -1,0 +1,13 @@
+{
+  "name": "Vokabeltrainer Englisch–Deutsch",
+  "short_name": "Vokabeltrainer",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#f4f7fb",
+  "description": "Lokaler Englisch–Deutsch-Vokabeltrainer",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
