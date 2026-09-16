@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { evaluateAnswer, normalizeAnswer } from '../src/services/answerEvaluationService.js';
 import { createVocabulary, DIRECTIONS } from '../src/domain/vocabulary.js';
 import { migrateVocabulary } from '../src/domain/migrations.js';
-import { updateProgress, priorityScore, selectNextVocabulary } from '../src/services/learningEngine.js';
+import { updateProgress, priorityScore, selectNextVocabulary, resolveQuestionDirection, RANDOM_DIRECTION } from '../src/services/learningEngine.js';
 import { buildChoices } from '../src/services/multipleChoiceService.js';
 import { parseVocabularyCsv, mergeRepositoryVocabulary } from '../src/services/csvVocabularyService.js';
 import { createProgressBackup, applyProgressBackup } from '../src/services/progressBackupService.js';
@@ -20,6 +20,19 @@ test('accepts exact answer ignoring case', () => assert.equal(evaluateAnswer('HO
 test('accepts alternative translation', () => assert.equal(evaluateAnswer('beginnen', ['anfangen', 'beginnen']).result, 'correct'));
 test('marks one-character typo as near', () => assert.equal(evaluateAnswer('becaus', ['because']).result, 'near'));
 test('does not over-tolerate short words', () => assert.equal(evaluateAnswer('in', ['on']).result, 'wrong'));
+
+test('random direction can resolve to English to German', () => {
+  assert.equal(resolveQuestionDirection(RANDOM_DIRECTION, 0.1), DIRECTIONS.EN_DE);
+});
+
+test('random direction can resolve to German to English', () => {
+  assert.equal(resolveQuestionDirection(RANDOM_DIRECTION, 0.9), DIRECTIONS.DE_EN);
+});
+
+test('fixed learning direction remains unchanged', () => {
+  assert.equal(resolveQuestionDirection(DIRECTIONS.EN_DE, 0.9), DIRECTIONS.EN_DE);
+  assert.equal(resolveQuestionDirection(DIRECTIONS.DE_EN, 0.1), DIRECTIONS.DE_EN);
+});
 
 test('tracks directions separately', () => {
   const v = createVocabulary({ id: 'v001', english: 'house', german: 'Haus' });
