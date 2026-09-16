@@ -23,7 +23,7 @@ v0021,I'm the same.,Mir geht's genauso.,,
 v0022,Listen to the beat.,Hör dem Rhythmus zu.,,
 v0023,Let's have some fun.,Lass uns Spaß haben.,,Lasst uns Spaß haben.
 v0024,Come with me.,Komm mit.,,Kommt mit.
-v0025,How are you?,Wie geht es dir?,,Wie geht es euch?
+v0025,How are you?,Wie geht es dir?,,Wie geht es euch?|Wie geht es Ihnen?
 v0026,Let's be friends.,Lasst uns Freunde sein.,,
 v0027,It's time for fun.,Es ist Zeit für Spaß.,,
 v0028,Fun never ends.,Der Spaß hört nie auf.,,
@@ -46,25 +46,194 @@ v0044,to hear,hören,,
 v0045,the,der,,die|das
 v0046,I can ...,Ich kann ...,,
 v0047,a,ein,,eine
-v0048,boat,Boot,,
-v0049,flower,Blume,,
-v0050,girl,Mädchen,,
+v0048,boat,Boot,a boat,ein Boot
+v0049,flower,Blume,a flower,eine Blume
+v0050,girl,Mädchen,a girl,ein Mädchen
 v0051,on,auf,,an|am|in|im
-v0052,skates,Inlineskates,,Rollschuhe|Schlittschuhe
-v0053,boy,Junge,,
-v0054,mother,Mutter,,
-v0055,father,Vater,,
-v0056,dog,Hund,,
-v0057,cat,Katze,,
-v0058,bird,Vogel,,
-v0059,butterfly,Schmetterling,,
-v0060,bee,Biene,,
-v0061,tree,Baum,,
+v0052,skates,Inlineskates,,Rollschuhe|Schlittschuhe|(Inline-)Skates
+v0053,boy,Junge,a boy,ein Junge
+v0054,mother,Mutter,a mother,eine Mutter
+v0055,father,Vater,a father,ein Vater
+v0056,dog,Hund,a dog,ein Hund
+v0057,cat,Katze,a cat,eine Katze
+v0058,bird,Vogel,a bird,ein Vogel
+v0059,butterfly,Schmetterling,a butterfly,ein Schmetterling
+v0060,bee,Biene,a bee,eine Biene
+v0061,tree,Baum,a tree,ein Baum
 v0062,grass,Gras,,
-v0063,bike,Fahrrad,,
-v0064,to have a picnic,ein Picknick machen,,
+v0063,bike,Fahrrad,a bike,ein Fahrrad
+v0064,to have a picnic,ein Picknick machen,have a picnic,
 v0065,to read,lesen,,
-v0066,book,Buch,,
+v0066,book,Buch,a book,ein Buch
 v0067,to play,spielen,,
 v0068,to ride,fahren,,reiten
 v0069,to talk to,reden mit,,
+v0070,a dog on a leash,ein Hund an der Leine,,
+v0071,a parrot,ein Papagei,,
+v0072,a pigeon,eine Taube,,
+v0073,clouds,Wolken,,
+v0074,a river,ein Fluss,,
+v0075,(blue) sky,blauer Himmel,,
+v0076,a merry-go-round,ein Karussell,,
+v0077,Big Ben,Glockenturm,,
+v0078,the London Eye,Riesenrad,,
+v0079,jeans,Jeans,,
+v0080,a red T-shirt,ein rotes T-Shirt,,
+v0081,green trousers,eine grüne Hose,,
+v0082,a helmet,ein Helm,,
+v0083,white trainers,weiße Turnschuhe,,
+v0084,a football,ein Fußball,,
+v0085,a skateboard,ein Skateboard,,
+v0086,a food truck,ein Imbisswagen,,
+v0087,a plane,ein Flugzeug,,
+v0088,a ship,ein Schiff,,
+v0089,a baby,ein Baby,,
+v0090,a man,ein Mann,,
+v0091,a woman,eine Frau,,
+v0092,have a snack,eine Kleinigkeit essen,,
+v0093,eat pizza,Pizza essen,,
+v0094,eat a sandwich,ein Sandwich essen,,
+v0095,eat a banana,eine Banane essen,,
+v0096,play football,Fußball spielen,,
+v0097,play with friends,mit Freunden spielen,,
+v0098,read a book,ein Buch lesen,,
+v0099,read comics,Comics lesen,,
+v0100,ride a bike,Fahrrad fahren,,
+v0101,talk to friends,mit Freunden sprechen,,
+v0102,meet friends,Freunde treffen,,
+v0103,sit on a bench,auf einer Bank sitzen,,
+v0104,number,Zahl,,Nummer
+v0105,colour,Farbe,,
+v0106,shorts,Shorts,,kurze Hose
+v0107,zero,null,oh,
+v0108,one,eins,,
+v0109,two,zwei,,
+v0110,three,drei,,
+v0111,four,vier,,
+v0112,five,fünf,,
+v0113,six,sechs,,
+v0114,seven,sieben,,
+v0115,eight,acht,,
+v0116,nine,neun,,
+v0117,ten,zehn,,
+v0118,eleven,elf,,
+v0119,twelve,zwölf,,
+v0120,black,schwarz,,
+v0121,blue,blau,,
+v0122,brown,braun,,
+v0123,green,grün,,
+v0124,grey,grau,,
+v0125,orange,orange,,
+v0126,pink,pink,,rosa
+v0127,purple,lila,,
+v0128,red,rot,,
+v0129,white,weiß,,
+v0130,yellow,gelb,,
+v0131,My favourite ...,Mein/e Lieblings-...,,
+v0132,I like ...,Mir gefällt ...,,Ich mag ...
+v0133,to like,mögen,,gern haben
+v0134,to take photos,Fotos machen,,
+v0135,great,großartig,,toll|super
+v0136,big,groß,,
+v0137,sister,Schwester,,
+v0138,best,beste/-r/-s,,
+v0139,and,und,,
+v0140,we're,wir sind,we are,
+v0141,twin,Zwilling,,Zwillings-
+v0142,to have,haben,,
+v0143,funny,lustig,,witzig
+v0144,football,Fußball,,
+v0145,food,Essen,,Lebensmittel
+v0146,to cook,kochen,,
+v0147,netball,Korbball,,
+v0148,he's,er ist,he is,
+v0149,good,gut,,
+v0150,brother,Bruder,,
+v0151,Who is it?,Wer ist es?,,
+v0152,or,oder,,
+v0153,I,ich,,
+v0154,you,du,,ihr|Sie
+v0155,he,er,,
+v0156,she,sie,,
+v0157,it,es,,
+v0158,we,wir,,
+v0159,they,sie,,
+v0160,hobby,Hobby,hobbies,
+v0161,You too?,Du auch?,,ihr auch?|Sie auch?
+v0162,to watch,beobachten,,(sich) ansehen|zuschauen
+v0163,you're,du bist,you are,Sie sind
+v0164,My turn.,Ich bin dran.,,
+v0165,to draw,zeichnen,,
+v0166,picture,Bild,,Foto
+v0167,pet,Haustier,,
+v0168,game,Spiel,,
+v0169,to sing,singen,,
+v0170,horse,Pferd,,
+v0171,to dance,tanzen,,
+v0172,at Ruby and Ryan's house,bei Ruby und Ryan zu Hause,,
+v0173,house,Haus,,
+v0174,bored,gelangweilt,,
+v0175,Let's ...,Lass uns ...,,Lasst uns ...
+v0176,to go (to),gehen (zu/nach),,fahren (zu/nach)
+v0177,to,zu,,nach|auf|in
+v0178,fine,gut,,in Ordnung|schön
+v0179,Thanks.,Danke.,,
+v0180,this,dies,,diese/-r/-s
+v0181,here,hier,,
+v0182,tomorrow,morgen,,
+v0183,the first day of school,der erste Schultag,,
+v0184,yes,ja,,
+v0185,Come on!,Komm schon!,,Kommt schon!|Komm jetzt!|Kommt jetzt!
+v0186,to come,kommen,,
+v0187,It's time for ...,Es ist Zeit für ...,,
+v0188,ice cream,Eis,,Eiscreme
+v0189,can't,kann nicht,,können nicht
+v0190,me,mich,,mir
+v0191,thing,Ding,,Sache
+v0192,exercise book,Übungsheft,,Heft
+v0193,marker,Leuchtstift,,
+v0194,pen,Füller,,Kugelschreiber
+v0195,pencil,Bleistift,,Buntstift
+v0196,pencil case,Federmäppchen,,Mäppchen
+v0197,rubber,Radiergummi,,
+v0198,ruler,Lineal,,
+v0199,schoolbag,Schultasche,,
+v0200,crayon,Buntstift,,
+v0201,glue,Klebestift,,
+v0202,scissors,Schere,,
+v0203,sharpener,Spitzer,,
+v0204,year,Jahr,,Schuljahr
+v0205,to look at,anschauen,,ansehen
+v0206,us,uns,,
+v0207,to look,schauen,,sehen|aussehen
+v0208,over there,da drüben,,dort drüben|nach dort drüben
+v0209,nervous,nervös,,aufgeregt
+v0210,Don't worry!,Keine Sorge!,,
+v0211,to sit,sitzen,,
+v0212,together,zusammen,,miteinander|gemeinsam
+v0213,sports ground,Sportplatz,,
+v0214,why,warum,,
+v0215,Mrs,Frau (Anrede),,
+v0216,teacher,Lehrer/-in,,
+v0217,please,bitte,,
+v0218,to take,nehmen,,mitnehmen|wegnehmen|bringen|mitbringen
+v0219,home,nach Hause,,
+v0220,crazy,verrückt,,
+v0221,Look!,Schau mal!,,Schaut mal!
+v0222,That's ...,Das ist ...,that is ...,
+v0223,in front of,vor,,
+v0224,happy,glücklich,,froh|fröhlich
+v0225,to think,denken,,nachdenken|glauben|finden|meinen
+v0226,angry,wütend,,zornig|verärgert|böse
+v0227,surprised,überrascht,,
+v0228,sad,traurig,,
+v0229,uniform,Uniform,,
+v0230,boring,langweilig,,
+v0231,ugly,hässlich,,
+v0232,silly,dumm,,doof|albern
+v0233,to look for,suchen nach,,
+v0234,no,kein/-e,,
+v0235,today,heute,,
+v0236,bedroom,Schlafzimmer,,
+v0237,under,unter,,
+v0238,bed,Bett,,
