@@ -14,22 +14,6 @@
 </head>
 <body>
   <div id="app" class="app-shell" aria-live="polite"></div>
-
-  <dialog id="choice-dialog" class="choice-dialog">
-    <form method="dialog">
-      <h2 id="choice-dialog-title">Entscheidung</h2>
-      <p id="choice-dialog-text"></p>
-      <div id="choice-dialog-details" class="dialog-details"></div>
-      <div class="dialog-actions">
-        <button value="cancel" class="button secondary">Abbrechen</button>
-        <button value="keep" class="button secondary" id="dialog-keep">Vorhandene behalten</button>
-        <button value="update" class="button" id="dialog-update">Vorhandene aktualisieren</button>
-        <button value="new" class="button secondary" id="dialog-new">Trotzdem neu anlegen</button>
-        <button value="replace" class="button danger hidden" id="dialog-replace">Daten ersetzen</button>
-      </div>
-    </form>
-  </dialog>
-
   <script type="module" src="./src/app.js"></script>
 </body>
 </html>
