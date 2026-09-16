@@ -48,6 +48,7 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(36,87,
 .button.secondary { background: var(--surface-soft); color: var(--text); border: 1px solid var(--line); }
 .button.ghost { background: transparent; color: var(--primary); border: 1px solid var(--line); }
 .button:disabled { opacity: .48; cursor: not-allowed; }
+.file-button { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .icon-button { min-width: 44px; min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--primary); font-weight: 800; }
 .learning-shell { min-height: calc(100dvh - 165px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); display: grid; align-content: center; }
 .question { text-align: center; padding: 22px 10px; }
