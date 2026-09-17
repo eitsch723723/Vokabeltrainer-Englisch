@@ -46,6 +46,12 @@ test('learning UI defaults to random direction and multiple choice', async () =>
   assert.match(source, />Zufällig<\/option>/);
 });
 
+test('layout keeps navigation visible while main content scrolls', async () => {
+  const styles = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
+  assert.match(styles, /\.app-shell\s*\{[^}]*height:\s*100dvh;[^}]*overflow:\s*hidden;/s);
+  assert.match(styles, /\.main\s*\{[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/s);
+});
+
 test('tracks directions separately', () => {
   const v = createVocabulary({ id: 'v001', english: 'house', german: 'Haus' });
   const updated = updateProgress(v, DIRECTIONS.EN_DE, 'correct', new Date('2026-09-16T12:00:00Z'));

@@ -16,18 +16,18 @@
   --shadow: 0 8px 24px rgba(23, 32, 51, 0.08);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); }
 body { min-height: 100vh; min-height: 100dvh; }
 button, input, select { font: inherit; }
 button { touch-action: manipulation; }
 code { font-size: .92em; overflow-wrap: anywhere; }
-.app-shell { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding-top: env(safe-area-inset-top); }
+.app-shell { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding-top: env(safe-area-inset-top); }
 .topbar { padding: 14px max(16px, env(safe-area-inset-left)); display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); background: rgba(244, 247, 251, .94); backdrop-filter: blur(12px); }
 .topbar h1 { font-size: clamp(18px, 4vw, 24px); margin: 0; }
 .local-badge { font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); padding: 6px 9px; border-radius: 999px; white-space: nowrap; }
-.main { overflow: auto; -webkit-overflow-scrolling: touch; padding: 18px max(16px, env(safe-area-inset-left)) 24px max(16px, env(safe-area-inset-right)); }
+.main { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding: 18px max(16px, env(safe-area-inset-left)) 24px max(16px, env(safe-area-inset-right)); }
 .content { width: min(820px, 100%); margin: 0 auto; }
-.nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.97); }
+.nav { position: relative; z-index: 10; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: rgba(255,255,255,.97); }
 .nav button { min-height: 50px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-weight: 650; font-size: 13px; }
 .nav button.active { color: var(--primary); background: #e9efff; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
