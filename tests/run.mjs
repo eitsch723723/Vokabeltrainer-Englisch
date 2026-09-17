@@ -45,7 +45,7 @@ test('learning UI defaults to random direction and multiple choice', async () =>
   const source = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
   assert.match(source, /mode:\s*'choice'/);
   assert.match(source, /directionSelection:\s*RANDOM_DIRECTION/);
-  assert.match(source, />Zufällig<\/option>/);
+  assert.match(source, /\['random', 'Zufällig'/);
 });
 
 test('layout keeps navigation visible while main content scrolls', async () => {

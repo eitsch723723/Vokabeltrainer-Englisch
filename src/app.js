@@ -26,11 +26,19 @@ const state = {
     currentId: null,
     feedback: null,
     cloze: null,
+    setupStep: 'mode',
+    compactSetup: false,
     saving: false
   }
 };
 
 init().catch(showFatal);
+
+window.addEventListener('resize', () => {
+  if (state.view !== 'learn' || state.learning.active) return;
+  state.learning.compactSetup = false;
+  render();
+});
 
 async function init() {
   if (!('indexedDB' in window)) {
@@ -88,6 +96,12 @@ function render() {
     ${renderNav()}`;
   bindCommonEvents();
   bindViewEvents();
+  const setup = document.querySelector('.learning-setup');
+  const main = document.querySelector('.main');
+  if (setup && !state.learning.compactSetup && main.scrollHeight > main.clientHeight + 1) {
+    state.learning.compactSetup = true;
+    render();
+  }
 }
 
 function renderMessage() {
@@ -117,16 +131,7 @@ function renderLearn() {
     </div></section>`;
   }
 
-  if (!state.learning.active) {
-    return `<section class="learning-shell"><div class="card stack">
-      <div><h2>Lernen</h2><p class="muted">Wähle Lernmodus und Richtung. Bei „Zufällig“ wird die Abfragerichtung für jede neue Vokabel neu gewählt. Der Lernstand wird für beide Richtungen getrennt lokal gespeichert.</p></div>
-      <label>Lernmodus<select id="learning-mode"><option value="input" ${state.learning.mode === 'input' ? 'selected' : ''}>Übersetzung eingeben</option><option value="choice" ${state.learning.mode === 'choice' ? 'selected' : ''}>Multiple Choice</option><option value="cloze" ${state.learning.mode === 'cloze' ? 'selected' : ''}>Lückentexte</option></select></label>
-      <label ${state.learning.mode === 'cloze' ? 'hidden' : ''}>Lernrichtung<select id="learning-direction"><option value="random" ${state.learning.directionSelection === RANDOM_DIRECTION ? 'selected' : ''}>Zufällig</option><option value="en-de" ${state.learning.directionSelection === DIRECTIONS.EN_DE ? 'selected' : ''}>Englisch → Deutsch</option><option value="de-en" ${state.learning.directionSelection === DIRECTIONS.DE_EN ? 'selected' : ''}>Deutsch → Englisch</option></select></label>
-      ${state.learning.mode === 'cloze' ? '<p class="small muted">Ergänze englische Sätze mit einer von vier Antworten. Der deutsche Hinweis zeigt die gesuchte Bedeutung. Lernstand: Deutsch → Englisch.</p>' : ''}
-      ${state.vocabularies.length < 3 ? '<p class="small muted">Für sinnvolles Multiple Choice werden mindestens 3 Vokabeln benötigt.</p>' : ''}
-      <button class="button" id="start-learning">Lernen starten</button>
-    </div></section>`;
-  }
+  if (!state.learning.active) return renderLearningSetup();
 
   const current = currentVocabulary();
   const direction = state.learning.questionDirection;
@@ -148,6 +153,28 @@ function renderLearn() {
       ${cloze ? `<div class="cloze-text" lang="en">${state.learning.feedback ? escapeHtml(cloze.completed) : `${escapeHtml(cloze.before)}<span class="cloze-gap" aria-label="Lücke">____</span>${escapeHtml(cloze.after)}`}</div><p class="muted small">Gesuchte Bedeutung: ${escapeHtml(cloze.hint)}</p>` : `<div class="question-word">${escapeHtml(question)}</div>`}
       ${showSpeech ? '<button class="icon-button" id="speak-current" aria-label="Englisch vorlesen" title="Vorlesen">▶</button>' : ''}</div>
     ${state.learning.feedback ? renderFeedback(state.learning.feedback, correct) : renderAnswerControls(current)}
+  </div></section>`;
+}
+
+function renderLearningSetup() {
+  const compact = state.learning.compactSetup || window.matchMedia('(max-width: 620px), (max-height: 700px)').matches;
+  const cloze = state.learning.mode === 'cloze';
+  const directionStep = compact && state.learning.setupStep === 'direction' && !cloze;
+  const modes = [['choice', 'Multiple Choice', 'Wähle die passende Übersetzung.'], ['input', 'Übersetzung eingeben', 'Schreibe die Antwort selbst.'], ['cloze', 'Lückentexte', 'Ergänze englische Sätze.']];
+  const directions = [['random', 'Zufällig', 'Die Richtung wird zufällig gewählt.'], ['en-de', 'Englisch → Deutsch', 'Übersetze englische Vokabeln.'], ['de-en', 'Deutsch → Englisch', 'Finde die englische Übersetzung.']];
+  const modeLabel = modes.find(([id]) => id === state.learning.mode)[1];
+  const options = (items, kind, selected) => items.map(([id, label, description]) => `
+    <button type="button" class="setup-option" data-${kind}="${id}" aria-pressed="${id === selected}"><span class="setup-option-title">${label}</span><span class="setup-option-description">${description}</span></button>`).join('');
+
+  return `<section class="learning-shell"><div class="card stack learning-setup">
+    <div><h2>Lernen</h2><p class="muted setup-intro">${compact ? directionStep ? `Schritt 2 von 2 · ${modeLabel}` : cloze ? 'Wähle deinen Lernmodus.' : 'Schritt 1 von 2 · Wähle deinen Lernmodus.' : 'Wähle deinen Lernmodus und die Lernrichtung.'}</p></div>
+    ${!directionStep ? `<fieldset class="setup-group"><legend>Lernmodus</legend><div class="setup-options">${options(modes, 'mode', state.learning.mode)}</div></fieldset>` : ''}
+    ${!cloze && (!compact || directionStep) ? `<fieldset class="setup-group"><legend>Lernrichtung</legend><div class="setup-options">${options(directions, 'direction', state.learning.directionSelection)}</div></fieldset><p class="small muted setup-intro">Bei „Zufällig“ wird die Richtung für jede Aufgabe neu gewählt.</p>` : ''}
+    ${cloze ? '<p class="small muted setup-intro">Englische Sätze mit deutschem Hinweis und vier Antworten. Lernrichtung: Deutsch → Englisch.</p>' : ''}
+    <div class="setup-actions">
+      ${directionStep ? '<button class="button ghost" id="setup-back">Zurück zum Lernmodus</button>' : ''}
+      ${compact && !directionStep && !cloze ? '<button class="button" id="setup-next">Weiter zur Lernrichtung</button>' : '<button class="button" id="start-learning">Lernen starten</button>'}
+    </div>
   </div></section>`;
 }
 
@@ -235,15 +262,28 @@ function bindViewEvents() {
 }
 
 function bindLearnEvents() {
-  document.querySelector('#learning-mode')?.addEventListener('change', event => {
-    state.learning.directionSelection = document.querySelector('#learning-direction').value;
-    state.learning.mode = event.target.value;
+  document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => {
+    state.learning.mode = button.dataset.mode;
+    state.learning.setupStep = 'mode';
+    state.message = null;
     render();
-  });
+    document.querySelector(`[data-mode="${state.learning.mode}"]`)?.focus();
+  }));
+  document.querySelectorAll('[data-direction]').forEach(button => button.addEventListener('click', () => {
+    state.learning.directionSelection = button.dataset.direction;
+    render();
+    document.querySelector(`[data-direction="${state.learning.directionSelection}"]`)?.focus();
+  }));
+  for (const [id, step] of [['setup-next', 'direction'], ['setup-back', 'mode']]) {
+    document.getElementById(id)?.addEventListener('click', () => {
+      state.learning.setupStep = step;
+      render();
+      document.querySelector('.setup-option[aria-pressed="true"]')?.focus();
+    });
+  }
   const start = document.querySelector('#start-learning');
   if (start) start.addEventListener('click', () => {
-    const mode = document.querySelector('#learning-mode').value;
-    const directionSelection = document.querySelector('#learning-direction').value;
+    const { mode, directionSelection } = state.learning;
 
     if (mode === 'choice' && state.vocabularies.length < 3) {
       state.message = { kind: 'error', text: 'Für Multiple Choice werden mindestens 3 Vokabeln benötigt.' };
@@ -270,6 +310,7 @@ function bindLearnEvents() {
   });
 
   document.querySelector('#stop-learning')?.addEventListener('click', () => {
+    state.learning.setupStep = 'mode';
     state.learning.active = false;
     state.learning.questionDirection = null;
     state.learning.feedback = null;

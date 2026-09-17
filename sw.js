@@ -1,4 +1,4 @@
-const CACHE = 'vokabeltrainer-v5';
+const CACHE = 'vokabeltrainer-v6';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest', './icon.svg',
   './data/vocabulary.csv',
