@@ -1,5 +1,4 @@
-const CACHE = 'vokabeltrainer-v3';
-const VOCABULARY_PATH = new URL('./data/vocabulary.csv', self.registration.scope).pathname;
+const CACHE = 'vokabeltrainer-v4';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest', './icon.svg',
   './data/vocabulary.csv',
@@ -25,31 +24,28 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (url.pathname === VOCABULARY_PATH) {
-    event.respondWith(networkFirst(event.request));
-    return;
-  }
-
-  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-    if (response.ok) {
-      const copy = response.clone();
-      caches.open(CACHE).then(cache => cache.put(event.request, copy));
-    }
-    return response;
-  }).catch(() => caches.match('./index.html'))));
+  // Use network-first for both vocabulary data and the app shell. This avoids
+  // serving an old cached app.js after a deployment while preserving offline use.
+  event.respondWith(networkFirst(event.request));
 });
 
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
     if (response.ok) {
+      const copy = response.clone();
       const cache = await caches.open(CACHE);
-      await cache.put(request, response.clone());
+      await cache.put(request, copy);
     }
     return response;
   } catch (error) {
     const cached = await caches.match(request);
     if (cached) return cached;
+
+    if (request.mode === 'navigate') {
+      const fallback = await caches.match('./index.html');
+      if (fallback) return fallback;
+    }
     throw error;
   }
 }

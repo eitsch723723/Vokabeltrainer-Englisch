@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { evaluateAnswer, normalizeAnswer } from '../src/services/answerEvaluationService.js';
 import { createVocabulary, DIRECTIONS } from '../src/domain/vocabulary.js';
 import { migrateVocabulary } from '../src/domain/migrations.js';
@@ -16,9 +17,13 @@ const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
 
 test('normalizes case and spaces', () => assert.equal(normalizeAnswer('  House   '), 'house'));
+test('ignores sentence punctuation', () => assert.equal(evaluateAnswer('No, I am not', ['No, I am not.']).result, 'correct'));
+test('accepts omitted apostrophes', () => assert.equal(evaluateAnswer('dont', ["don't"]).result, 'correct'));
 test('accepts exact answer ignoring case', () => assert.equal(evaluateAnswer('HOUSE', ['house']).result, 'correct'));
 test('accepts alternative translation', () => assert.equal(evaluateAnswer('beginnen', ['anfangen', 'beginnen']).result, 'correct'));
 test('marks one-character typo as near', () => assert.equal(evaluateAnswer('becaus', ['because']).result, 'near'));
+test('marks adjacent transposition as near', () => assert.equal(evaluateAnswer('freind', ['friend']).result, 'near'));
+test('allows two minor edits in medium-length words', () => assert.equal(evaluateAnswer('becuase', ['because']).result, 'near'));
 test('does not over-tolerate short words', () => assert.equal(evaluateAnswer('in', ['on']).result, 'wrong'));
 
 test('random direction can resolve to English to German', () => {
@@ -32,6 +37,13 @@ test('random direction can resolve to German to English', () => {
 test('fixed learning direction remains unchanged', () => {
   assert.equal(resolveQuestionDirection(DIRECTIONS.EN_DE, 0.9), DIRECTIONS.EN_DE);
   assert.equal(resolveQuestionDirection(DIRECTIONS.DE_EN, 0.1), DIRECTIONS.DE_EN);
+});
+
+test('learning UI defaults to random direction and multiple choice', async () => {
+  const source = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.match(source, /mode:\s*'choice'/);
+  assert.match(source, /directionSelection:\s*RANDOM_DIRECTION/);
+  assert.match(source, />Zufällig<\/option>/);
 });
 
 test('tracks directions separately', () => {
