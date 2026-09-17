@@ -87,3 +87,11 @@ Die Tests decken Antwortnormalisierung, Tippfehlertoleranz, Alternativübersetzu
 Die App verwendet ausschließlich relative Pfade und benötigt keine serverseitigen Routen. Die Veröffentlichung erfolgt über `.github/workflows/pages.yml`.
 
 Reale iPhone-/iPad-Tests werden nur dann als durchgeführt dokumentiert, wenn sie tatsächlich auf den Geräten ausgeführt wurden.
+
+## Lernmodus Lückentexte
+
+Unter „Lernen“ den Modus „Lückentexte“ auswählen. Ein einfacher englischer Satz enthält eine Lücke am Anfang, in der Mitte oder am Ende. Der deutsche Hinweis bezeichnet die gesuchte Vokabel. Die Antwort wird aus genau vier verschiedenen englischen Einträgen der aktuellen Repository-Vokabelliste gewählt. Nach der Antwort erscheint der vollständige Satz, der auch vorgelesen werden kann.
+
+Die Satzvorlagen in `src/services/clozeService.js` sind auf passende Vokabeln abgestimmt. Nur vorhandene Vokabeln mit passender Vorlage und mindestens drei eindeutigen Ablenkantworten werden abgefragt. Neue Vokabeln können dort um eine Vorlage mit genau einem `{}` ergänzt werden. Synonyme und Einträge mit gleicher deutscher Bedeutung werden als Ablenkantworten ausgeschlossen. Die Antwortreihenfolge wird für jede Aufgabe gemischt und bleibt während der Aufgabe stabil.
+
+Lückentexte üben Englisch; der Lernstand fließt in die bestehende Richtung Deutsch → Englisch ein. Falsche Auswahl wird als falsch bewertet, ohne Tippfehlertoleranz. Die Satzvorlagen funktionieren auch offline.

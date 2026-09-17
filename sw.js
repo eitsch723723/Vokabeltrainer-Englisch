@@ -1,11 +1,11 @@
-const CACHE = 'vokabeltrainer-v4';
+const CACHE = 'vokabeltrainer-v5';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest', './icon.svg',
   './data/vocabulary.csv',
   './src/app.js', './src/domain/vocabulary.js', './src/domain/migrations.js',
   './src/repository/indexedDbVocabularyRepository.js',
   './src/services/answerEvaluationService.js', './src/services/learningEngine.js',
-  './src/services/speechService.js', './src/services/multipleChoiceService.js',
+  './src/services/clozeService.js', './src/services/speechService.js', './src/services/multipleChoiceService.js',
   './src/services/csvVocabularyService.js', './src/services/progressBackupService.js'
 ];
 

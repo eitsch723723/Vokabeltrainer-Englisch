@@ -94,3 +94,7 @@ input:focus, select:focus, button:focus-visible { outline: 3px solid rgba(36,87,
   .question { padding: 8px; }
   .question-word { font-size: 34px; }
 }
+
+[hidden] { display: none !important; }
+.cloze-text { font-size: clamp(24px, 6vw, 36px); line-height: 1.5; font-weight: 700; overflow-wrap: anywhere; }
+.cloze-gap { color: var(--primary); white-space: nowrap; }

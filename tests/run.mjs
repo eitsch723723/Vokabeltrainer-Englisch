@@ -13,6 +13,8 @@ if (!globalThis.crypto?.randomUUID) {
   globalThis.crypto = { randomUUID };
 }
 
+import { buildClozeQuestion, clozeVocabulary } from '../src/services/clozeService.js';
+
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
 
@@ -148,6 +150,47 @@ test('migrates legacy version 0', () => {
   const migrated = migrateVocabulary({ id: 'legacy', en: 'cat', de: 'Katze', alternatives: ['Kater'] });
   assert.equal(migrated.schemaVersion, 1);
   assert.equal(migrated.alternatives.german[0], 'Kater');
+});
+
+test('cloze questions use current vocabulary, four unique choices and all gap positions', async () => {
+  const rows = parseVocabularyCsv(await readFile(new URL('../data/vocabulary.csv', import.meta.url), 'utf8'));
+  const eligible = clozeVocabulary(rows);
+  assert.ok(eligible.length > 100);
+  const positions = new Set();
+  for (const row of eligible) {
+    const q = buildClozeQuestion(row, rows, () => 0.4);
+    assert.equal(q.choices.length, 4);
+    assert.equal(new Set(q.choices.map(normalizeAnswer)).size, 4);
+    assert.equal(q.choices.filter(a => a === row.english).length, 1);
+    assert.equal(q.hint, row.german);
+    assert.ok(q.choices.every(a => rows.some(v => v.english === a)));
+    assert.ok(!q.completed.includes('{}'));
+    positions.add(!q.before ? 'start' : /^\W*$/.test(q.after) ? 'end' : 'middle');
+  }
+  assert.deepEqual([...positions].sort(), ['end', 'middle', 'start']);
+});
+
+test('cloze excludes synonyms, duplicate answers and equal German meanings', () => {
+  const rows = [
+    { id: '1', english: 'good', german: 'gut', alternatives: { english: ['fine'] } },
+    { id: '2', english: 'fine', german: 'gut' },
+    { id: '3', english: 'GOOD', german: 'prima' },
+    { id: '4', english: 'nice', german: 'nett', alternatives: { english: ['good'] } },
+    { id: '5', english: 'cat', german: 'Katze' },
+    { id: '6', english: 'dog', german: 'Hund' },
+    { id: '7', english: 'bird', german: 'Vogel' }
+  ];
+  const q = buildClozeQuestion(rows[0], rows, () => 0.5);
+  assert.deepEqual([...q.choices].sort(), ['bird', 'cat', 'dog', 'good']);
+  assert.equal(buildClozeQuestion(rows[0], rows.slice(0, 6)), null);
+  assert.equal(buildClozeQuestion({ english: 'unknown' }, rows), null);
+});
+
+test('cloze choice order varies and updated vocabulary controls availability', () => {
+  const rows = ['cat', 'dog', 'bird', 'house'].map((english, i) => ({ id: String(i), english, german: String(i) }));
+  assert.notDeepEqual(buildClozeQuestion(rows[0], rows, () => 0).choices, buildClozeQuestion(rows[0], rows, () => 0.99).choices);
+  assert.equal(clozeVocabulary(rows.slice(0, 3)).length, 0);
+  assert.ok(!clozeVocabulary([{ ...rows[0], english: 'new untemplated word' }, ...rows.slice(1)]).some(v => v.id === '0'));
 });
 
 let passed = 0;
