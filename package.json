@@ -5,6 +5,6 @@
   "type": "module",
   "scripts": {
     "test": "node tests/run.mjs",
-    "check": "node --check src/services/clozeService.js && node --check src/app.js && node --check src/domain/vocabulary.js && node --check src/domain/migrations.js && node --check src/repository/indexedDbVocabularyRepository.js && node --check src/services/answerEvaluationService.js && node --check src/services/learningEngine.js && node --check src/services/multipleChoiceService.js && node --check src/services/speechService.js && node --check src/services/csvVocabularyService.js && node --check src/services/progressBackupService.js"
+    "check": "node --check src/services/grammarClozeService.js && node --check src/services/clozeService.js && node --check src/app.js && node --check src/domain/vocabulary.js && node --check src/domain/migrations.js && node --check src/repository/indexedDbVocabularyRepository.js && node --check src/services/answerEvaluationService.js && node --check src/services/learningEngine.js && node --check src/services/multipleChoiceService.js && node --check src/services/speechService.js && node --check src/services/csvVocabularyService.js && node --check src/services/progressBackupService.js"
   }
 }

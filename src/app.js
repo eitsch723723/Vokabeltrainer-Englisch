@@ -3,7 +3,7 @@ import { DIRECTIONS } from './domain/vocabulary.js';
 import { evaluateAnswer, normalizeAnswer } from './services/answerEvaluationService.js';
 import { selectNextVocabulary, updateProgress, masteryLevel, resolveQuestionDirection, RANDOM_DIRECTION } from './services/learningEngine.js';
 import { speakEnglish } from './services/speechService.js';
-import { buildClozeQuestion, clozeVocabulary } from './services/clozeService.js';
+import { buildClozeQuestion, clozeVocabulary, selectNextClozeVocabulary } from './services/clozeService.js';
 import { buildChoices } from './services/multipleChoiceService.js';
 import { fetchVocabularyCsv, mergeRepositoryVocabulary } from './services/csvVocabularyService.js';
 import { createProgressBackup, applyProgressBackup } from './services/progressBackupService.js';
@@ -26,6 +26,7 @@ const state = {
     currentId: null,
     feedback: null,
     cloze: null,
+    clozeQuestionIndex: 0,
     setupStep: 'mode',
     compactSetup: false,
     saving: false
@@ -149,9 +150,10 @@ function renderLearn() {
 
   return `<section class="learning-shell"><div class="card stack">
     <div class="row spread"><span class="badge">${state.learning.mode === 'cloze' ? 'Lückentexte' : state.learning.mode === 'input' ? 'Eingabe' : 'Multiple Choice'} · ${directionBadge}</span><button class="button ghost" id="stop-learning">Beenden</button></div>
-    <div class="question"><div class="question-label">${cloze ? 'Ergänze die Lücke' : direction === DIRECTIONS.EN_DE ? 'Übersetze ins Deutsche' : 'Übersetze ins Englische'}</div>
-      ${cloze ? `<div class="cloze-text" lang="en">${state.learning.feedback ? escapeHtml(cloze.completed) : `${escapeHtml(cloze.before)}<span class="cloze-gap" aria-label="Lücke">____</span>${escapeHtml(cloze.after)}`}</div><p class="muted small">Gesuchte Bedeutung: ${escapeHtml(cloze.hint)}</p>` : `<div class="question-word">${escapeHtml(question)}</div>`}
+    <div class="question"><div class="question-label">${cloze ? cloze.category === 'grammar' ? 'Satzbau · Ergänze die Lücke' : 'Wortschatz · Ergänze die Lücke' : direction === DIRECTIONS.EN_DE ? 'Übersetze ins Deutsche' : 'Übersetze ins Englische'}</div>
+      ${cloze ? `<div class="cloze-text" lang="en">${state.learning.feedback ? escapeHtml(cloze.completed) : `${escapeHtml(cloze.before)}<span class="cloze-gap" aria-label="Lücke">____</span>${escapeHtml(cloze.after)}`}</div><p class="muted small">${cloze.category === 'grammar' ? 'Hinweis' : 'Gesuchte Bedeutung'}: ${escapeHtml(cloze.hint)}</p>` : `<div class="question-word">${escapeHtml(question)}</div>`}
       ${showSpeech ? '<button class="icon-button" id="speak-current" aria-label="Englisch vorlesen" title="Vorlesen">▶</button>' : ''}</div>
+    ${state.learning.feedback && cloze?.explanation ? `<p class="notice small">${escapeHtml(cloze.explanation)}</p>` : ''}
     ${state.learning.feedback ? renderFeedback(state.learning.feedback, correct) : renderAnswerControls(current)}
   </div></section>`;
 }
@@ -170,7 +172,7 @@ function renderLearningSetup() {
     <div><h2>Lernen</h2><p class="muted setup-intro">${compact ? directionStep ? `Schritt 2 von 2 · ${modeLabel}` : cloze ? 'Wähle deinen Lernmodus.' : 'Schritt 1 von 2 · Wähle deinen Lernmodus.' : 'Wähle deinen Lernmodus und die Lernrichtung.'}</p></div>
     ${!directionStep ? `<fieldset class="setup-group"><legend>Lernmodus</legend><div class="setup-options">${options(modes, 'mode', state.learning.mode)}</div></fieldset>` : ''}
     ${!cloze && (!compact || directionStep) ? `<fieldset class="setup-group"><legend>Lernrichtung</legend><div class="setup-options">${options(directions, 'direction', state.learning.directionSelection)}</div></fieldset><p class="small muted setup-intro">Bei „Zufällig“ wird die Richtung für jede Aufgabe neu gewählt.</p>` : ''}
-    ${cloze ? '<p class="small muted setup-intro">Englische Sätze mit deutschem Hinweis und vier Antworten. Lernrichtung: Deutsch → Englisch.</p>' : ''}
+    ${cloze ? '<p class="small muted setup-intro">Übe Satzbau und Wortschatz mit vier Antworten. Zwei Satzbau-Aufgaben wechseln sich mit einer Wortschatz-Aufgabe ab. Schwierige Inhalte kommen häufiger dran.</p>' : ''}
     <div class="setup-actions">
       ${directionStep ? '<button class="button ghost" id="setup-back">Zurück zum Lernmodus</button>' : ''}
       ${compact && !directionStep && !cloze ? '<button class="button" id="setup-next">Weiter zur Lernrichtung</button>' : '<button class="button" id="start-learning">Lernen starten</button>'}
@@ -185,7 +187,7 @@ function renderAnswerControls(current) {
 
   const choices = state.learning.cloze && state.learning.mode === 'cloze'
     ? state.learning.cloze.choices : buildChoices(current, state.vocabularies, state.learning.questionDirection, 4);
-  return `<div class="mc-grid">${choices.map(choice => `<button class="button secondary" data-choice="${escapeAttribute(choice)}">${escapeHtml(choice)}</button>`).join('')}</div>`;
+  return `<div class="mc-grid">${choices.map(choice => `<button class="button secondary" data-choice="${escapeAttribute(choice)}">${escapeHtml(state.learning.mode === 'cloze' && state.learning.cloze?.capitalize ? choice[0].toLocaleUpperCase('en') + choice.slice(1) : choice)}</button>`).join('')}</div>`;
 }
 
 function renderFeedback(feedback, correctAnswer) {
@@ -195,7 +197,7 @@ function renderFeedback(feedback, correctAnswer) {
     wrong: ['Noch nicht richtig', 'wrong']
   };
   const [title, cls] = labels[feedback.result];
-  return `<div class="stack"><div class="feedback ${cls}" role="status"><div>${title}</div>${feedback.result !== 'correct' ? `<div class="small" style="margin-top:6px">Richtige Antwort: ${escapeHtml(correctAnswer)}</div>` : ''}</div><button class="button" id="next-question">Nächste Vokabel</button></div>`;
+  return `<div class="stack"><div class="feedback ${cls}" role="status"><div>${title}</div>${feedback.result !== 'correct' ? `<div class="small" style="margin-top:6px">Richtige Antwort: ${escapeHtml(correctAnswer)}</div>` : ''}</div><button class="button" id="next-question">${state.learning.mode === 'cloze' ? 'Nächste Aufgabe' : 'Nächste Vokabel'}</button></div>`;
 }
 
 function renderVocabularyList() {
@@ -303,7 +305,8 @@ function bindLearnEvents() {
     state.learning.questionDirection = questionDirection;
     state.learning.active = true;
     state.learning.feedback = null;
-    state.learning.currentId = selectNextVocabulary(pool, questionDirection)?.id ?? null;
+    state.learning.clozeQuestionIndex = 0;
+    state.learning.currentId = (mode === 'cloze' ? selectNextClozeVocabulary(state.vocabularies) : selectNextVocabulary(pool, questionDirection))?.id ?? null;
     state.learning.cloze = mode === 'cloze' ? buildClozeQuestion(currentVocabulary(), state.vocabularies) : null;
     state.message = null;
     render();
@@ -338,8 +341,11 @@ function bindLearnEvents() {
   document.querySelector('#next-question')?.addEventListener('click', () => {
     const pool = state.learning.mode === 'cloze' ? clozeVocabulary(state.vocabularies) : state.vocabularies;
     const nextDirection = state.learning.mode === 'cloze' ? DIRECTIONS.DE_EN : resolveQuestionDirection(state.learning.directionSelection);
-    const next = selectNextVocabulary(pool, nextDirection, new Date(), state.learning.currentId)
-      ?? selectNextVocabulary(pool, nextDirection);
+    if (state.learning.mode === 'cloze') state.learning.clozeQuestionIndex++;
+    const next = state.learning.mode === 'cloze'
+      ? selectNextClozeVocabulary(state.vocabularies, state.learning.clozeQuestionIndex, state.learning.currentId)
+      : selectNextVocabulary(pool, nextDirection, new Date(), state.learning.currentId)
+        ?? selectNextVocabulary(pool, nextDirection);
     state.learning.questionDirection = nextDirection;
     state.learning.currentId = next?.id ?? null;
     state.learning.cloze = next && state.learning.mode === 'cloze' ? buildClozeQuestion(next, state.vocabularies) : null;

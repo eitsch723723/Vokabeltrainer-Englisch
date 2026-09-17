@@ -1,3 +1,5 @@
+import { DIRECTIONS } from '../domain/vocabulary.js';
+import { grammarClozeTemplates, grammarChoices } from './grammarClozeService.js';
 import { normalizeAnswer } from './answerEvaluationService.js';
 
 // Only matching, current repository entries are used. {} marks the single gap.
@@ -22,10 +24,6 @@ add('food|ice cream', 'I like this {}.');
 add('under|in front of|on', 'My schoolbag is {} the bed.');
 add('here|over there|home', 'My friends are going {}.');
 add('today|tomorrow', 'We can play football {}.');
-add('I', '{} can speak English.');
-add('we', '{} can dance together.');
-add('you', '{} can come with me.');
-add('he|she|they', '{} can ride a bike.');
 add("we're", '{} friends.');
 add("he's|you're", '{} my best friend.');
 add('please', '{}, come with me.');
@@ -56,7 +54,9 @@ function distractors(current, all) {
 }
 
 export function clozeVocabulary(all) {
-  return all.filter(v => templates.has(v.english) && distractors(v, all).length >= 3);
+  return all.filter(v => grammarClozeTemplates.has(v.english)
+    ? grammarChoices(v, all).length >= 4
+    : templates.has(v.english) && distractors(v, all).length >= 3);
 }
 
 function shuffle(values, random) {
@@ -69,15 +69,48 @@ function shuffle(values, random) {
 }
 
 export function buildClozeQuestion(current, all, random = Math.random) {
-  const template = templates.get(current.english);
-  const alternatives = distractors(current, all);
+  const grammar = grammarClozeTemplates.get(current.english);
+  const template = grammar ? grammar.sentences[Math.floor(random() * grammar.sentences.length)] : templates.get(current.english);
+  const alternatives = grammar ? grammarChoices(current, all).filter(answer => answer !== current.english) : distractors(current, all);
   if (!template || alternatives.length < 3) return null;
   const [before, after] = template.split('{}');
   const answer = current.english;
-  const displayAnswer = before ? answer : answer[0].toLocaleUpperCase('en') + answer.slice(1);
+  const capitalize = !before || /[.!?]\s*$/.test(before);
+  const displayAnswer = capitalize ? answer[0].toLocaleUpperCase('en') + answer.slice(1) : answer;
   return {
-    before, after, answer, hint: current.german,
+    before, after, answer, capitalize,
+    category: grammar ? 'grammar' : 'vocabulary',
+    hint: grammar?.hint ?? current.german,
+    explanation: grammar?.explanation ?? null,
     completed: before + displayAnswer + after,
     choices: shuffle([answer, ...shuffle(alternatives, random).slice(0, 3)], random)
   };
+}
+
+// Two grammar slots and one vocabulary slot keep both exercise types present.
+// Within each slot, weak concepts are weighted above new and mastered ones.
+export function clozeWeight(vocabulary, now = new Date()) {
+  const progress = vocabulary.learning[DIRECTIONS.DE_EN];
+  if (!progress.attempts) return 3;
+  const accuracy = (progress.correct + progress.near * 0.5) / progress.attempts;
+  const recentMistake = progress.streak === 0 && progress.wrong > 0;
+  const due = !progress.nextDueAt || new Date(progress.nextDueAt) <= now;
+  return 0.5 + (1 - accuracy) * 3 + (recentMistake ? 5 : 0) + (due ? 2 : 0);
+}
+
+export function selectNextClozeVocabulary(all, questionIndex = 0, excludeId = null, now = new Date(), random = Math.random) {
+  const eligible = clozeVocabulary(all);
+  const grammarSlot = questionIndex % 3 !== 2;
+  let pool = eligible.filter(v => grammarClozeTemplates.has(v.english) === grammarSlot);
+  if (!pool.length) pool = eligible;
+  const withoutPrevious = pool.filter(v => v.id !== excludeId);
+  if (withoutPrevious.length) pool = withoutPrevious;
+  if (!pool.length) return null;
+  const weights = pool.map(v => clozeWeight(v, now));
+  let remaining = random() * weights.reduce((sum, weight) => sum + weight, 0);
+  for (let i = 0; i < pool.length; i++) {
+    remaining -= weights[i];
+    if (remaining < 0) return pool[i];
+  }
+  return pool[pool.length - 1];
 }

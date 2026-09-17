@@ -13,7 +13,7 @@ if (!globalThis.crypto?.randomUUID) {
   globalThis.crypto = { randomUUID };
 }
 
-import { buildClozeQuestion, clozeVocabulary } from '../src/services/clozeService.js';
+import { buildClozeQuestion, clozeVocabulary, clozeWeight, selectNextClozeVocabulary } from '../src/services/clozeService.js';
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -162,7 +162,8 @@ test('cloze questions use current vocabulary, four unique choices and all gap po
     assert.equal(q.choices.length, 4);
     assert.equal(new Set(q.choices.map(normalizeAnswer)).size, 4);
     assert.equal(q.choices.filter(a => a === row.english).length, 1);
-    assert.equal(q.hint, row.german);
+    if (q.category === 'vocabulary') assert.equal(q.hint, row.german);
+    else assert.ok(q.explanation);
     assert.ok(q.choices.every(a => rows.some(v => v.english === a)));
     assert.ok(!q.completed.includes('{}'));
     positions.add(!q.before ? 'start' : /^\W*$/.test(q.after) ? 'end' : 'middle');
@@ -191,6 +192,59 @@ test('cloze choice order varies and updated vocabulary controls availability', (
   assert.notDeepEqual(buildClozeQuestion(rows[0], rows, () => 0).choices, buildClozeQuestion(rows[0], rows, () => 0.99).choices);
   assert.equal(clozeVocabulary(rows.slice(0, 3)).length, 0);
   assert.ok(!clozeVocabulary([{ ...rows[0], english: 'new untemplated word' }, ...rows.slice(1)]).some(v => v.id === '0'));
+});
+
+test('grammar covers pronouns, singular/plural statements and questions with four relevant choices', async () => {
+  const rows = parseVocabularyCsv(await readFile(new URL('../data/vocabulary.csv', import.meta.url), 'utf8'));
+  for (const english of ['I', 'you', 'he', 'she', 'it', 'we', 'they', 'there is', 'there are', 'is there', 'are there']) {
+    const current = rows.find(v => v.english === english);
+    const first = buildClozeQuestion(current, rows, () => 0);
+    const second = buildClozeQuestion(current, rows, () => 0.99);
+    assert.equal(first.category, 'grammar');
+    assert.equal(first.choices.length, 4);
+    assert.notEqual(first.completed, second.completed);
+    assert.ok(first.explanation);
+    if (english.includes('there')) {
+      assert.deepEqual([...first.choices].sort(), ['are there', 'is there', 'there are', 'there is']);
+      assert.equal(first.completed.endsWith('?'), english.endsWith('there'));
+    } else {
+      assert.ok(first.choices.every(a => ['I', 'you', 'he', 'she', 'it', 'we', 'they'].includes(a)));
+    }
+  }
+  const he = buildClozeQuestion(rows.find(v => v.english === 'he'), rows, () => 0);
+  assert.equal(he.completed, 'Ben is my brother. He is ten.');
+});
+
+test('cloze keeps a two-to-one grammar mix and avoids immediate repetition', async () => {
+  const rows = parseVocabularyCsv(await readFile(new URL('../data/vocabulary.csv', import.meta.url), 'utf8'));
+  let previous = null;
+  for (let i = 0; i < 12; i++) {
+    const next = selectNextClozeVocabulary(rows, i, previous, new Date(), () => 0.2);
+    assert.notEqual(next.id, previous);
+    assert.equal(buildClozeQuestion(next, rows).category, i % 3 === 2 ? 'vocabulary' : 'grammar');
+    previous = next.id;
+  }
+  const vocabularyOnly = rows.filter(v => ['cat', 'dog', 'bird', 'house'].includes(v.english));
+  assert.ok(selectNextClozeVocabulary(vocabularyOnly, 0));
+  assert.equal(selectNextClozeVocabulary([], 0), null);
+});
+
+test('weak cloze concepts get more practice than new or mastered concepts and recover after success', () => {
+  const now = new Date('2026-09-17T12:00:00Z');
+  const rows = ['he', 'she', 'it', 'we'].map((english, i) => createVocabulary({ id: String(i), english, german: String(i) }));
+  rows[0] = updateProgress(rows[0], DIRECTIONS.DE_EN, 'wrong', now);
+  for (let i = 0; i < 4; i++) rows[1] = updateProgress(rows[1], DIRECTIONS.DE_EN, 'correct', now);
+  assert.ok(clozeWeight(rows[0], now) > clozeWeight(rows[2], now));
+  assert.ok(clozeWeight(rows[2], now) > clozeWeight(rows[1], now));
+  const counts = [0, 0, 0, 0];
+  for (let i = 0; i < 1000; i++) counts[Number(selectNextClozeVocabulary(rows, 0, null, now, () => i / 1000).id)]++;
+  assert.ok(counts[0] > counts[2] * 2);
+  assert.ok(counts[2] > counts[1]);
+  const recovered = updateProgress(rows[0], DIRECTIONS.DE_EN, 'correct', now);
+  assert.ok(clozeWeight(recovered, now) < clozeWeight(rows[0], now));
+  const backup = createProgressBackup(rows);
+  const restored = applyProgressBackup(rows.map(v => createVocabulary(v)), backup).vocabularies;
+  assert.equal(clozeWeight(restored[0], now), clozeWeight(rows[0], now));
 });
 
 let passed = 0;
