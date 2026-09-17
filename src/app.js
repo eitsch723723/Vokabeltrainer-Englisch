@@ -19,7 +19,7 @@ const state = {
   sourceStatus: 'loading',
   learning: {
     active: false,
-    mode: 'input',
+    mode: 'choice',
     directionSelection: RANDOM_DIRECTION,
     questionDirection: null,
     currentId: null,
@@ -392,7 +392,7 @@ function sortVocabulary(vocabularies) {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(registration => registration.update()).catch(() => {});
   }
 }
 
