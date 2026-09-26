@@ -17,6 +17,7 @@ const state = {
   vocabularies: [],
   search: '',
   message: null,
+  cacheWarning: false,
   sourceStatus: 'loading',
   learning: {
     active: false,
@@ -106,9 +107,12 @@ function render() {
 }
 
 function renderMessage() {
-  if (!state.message) return '';
+  const cacheWarning = state.cacheWarning
+    ? '<div class="notice" role="status">Offline-Caching konnte nicht aktiviert werden. Die App kann weiterhin online verwendet werden.</div><div style="height:12px"></div>'
+    : '';
+  if (!state.message) return cacheWarning;
   const kind = state.message.kind === 'error' ? 'error' : state.message.kind === 'success' ? 'success' : '';
-  return `<div class="notice ${kind}" role="status">${escapeHtml(state.message.text)}</div><div style="height:12px"></div>`;
+  return `${cacheWarning}<div class="notice ${kind}" role="status">${escapeHtml(state.message.text)}</div><div style="height:12px"></div>`;
 }
 
 function renderView() {
@@ -473,7 +477,25 @@ function sortVocabulary(vocabularies) {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(registration => registration.update()).catch(() => {});
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+      .then(registration => {
+        registration.update().catch(error => console.warn('Service worker update check failed:', error));
+      })
+      .catch(error => {
+        console.warn('Service worker registration failed:', error);
+        state.cacheWarning = true;
+        const content = document.querySelector('.content');
+        if (content) {
+          const warning = document.createElement('div');
+          warning.className = 'notice';
+          warning.setAttribute('role', 'status');
+          warning.textContent = 'Offline-Caching konnte nicht aktiviert werden. Die App kann weiterhin online verwendet werden.';
+          const spacer = document.createElement('div');
+          spacer.style.height = '12px';
+          content.prepend(spacer);
+          content.prepend(warning);
+        }
+      });
   }
 }
 
