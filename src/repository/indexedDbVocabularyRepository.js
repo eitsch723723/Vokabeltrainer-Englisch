@@ -1,6 +1,8 @@
 import { migrateVocabulary } from '../domain/migrations.js';
 
-const DB_NAME = 'vokabeltrainer-englisch';
+// GitHub Pages previews share an origin with production; isolate persistent progress by path.
+const IS_PREVIEW = new URL(import.meta.url).pathname.includes('/test/');
+const DB_NAME = IS_PREVIEW ? 'vokabeltrainer-englisch-test' : 'vokabeltrainer-englisch';
 const DB_VERSION = 1;
 const VOCAB_STORE = 'vocabularies';
 const META_STORE = 'meta';

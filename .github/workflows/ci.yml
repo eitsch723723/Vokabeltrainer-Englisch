@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,3 +23,46 @@ jobs:
         run: npm test
       - name: Check JavaScript syntax
         run: npm run check
+
+  browser:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout proposed application
+        uses: actions/checkout@v4
+        with:
+          path: preview
+      - name: Checkout production application
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+      - name: Assemble same-origin production and preview fixture
+        run: |
+          mkdir -p e2e-site/test
+          rsync -a --exclude='.git/' --exclude='.github/' production/ e2e-site/
+          rsync -a --exclude='.git/' --exclude='.github/' preview/ e2e-site/test/
+          test -f e2e-site/index.html
+          test -f e2e-site/test/index.html
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test runner
+        working-directory: preview
+        run: npm install --no-save --ignore-scripts @playwright/test@1.55.0
+      - name: Install Chromium and WebKit for browser simulation
+        working-directory: preview
+        run: npx playwright install --with-deps chromium webkit
+      - name: Run Chromium and mobile WebKit integration tests
+        working-directory: preview
+        run: npx playwright test
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-report
+          path: |
+            preview/playwright-report
+            preview/test-results
+          if-no-files-found: ignore

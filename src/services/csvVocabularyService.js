@@ -31,6 +31,7 @@ export function parseVocabularyCsv(text) {
 
     vocabularies.push(createVocabulary({
       id,
+      addedAt: cell(row, column('added_at')) || null,
       english,
       german,
       alternatives: {
@@ -63,6 +64,7 @@ export function mergeRepositoryVocabulary(source, cached) {
       },
       history: existing.history ?? [],
       createdAt: existing.createdAt ?? incoming.createdAt,
+      addedAt: incoming.addedAt ?? null,
       updatedAt: incoming.updatedAt
     };
   });

@@ -1,3 +1,4 @@
+import { noveltyBonus } from './learningEngine.js';
 import { DIRECTIONS } from '../domain/vocabulary.js';
 import { grammarClozeTemplates, grammarChoices } from './grammarClozeService.js';
 import { normalizeAnswer } from './answerEvaluationService.js';
@@ -91,11 +92,11 @@ export function buildClozeQuestion(current, all, random = Math.random) {
 // Within each slot, weak concepts are weighted above new and mastered ones.
 export function clozeWeight(vocabulary, now = new Date()) {
   const progress = vocabulary.learning[DIRECTIONS.DE_EN];
-  if (!progress.attempts) return 3;
+  if (!progress.attempts) return 3 + noveltyBonus(vocabulary, now) / 100;
   const accuracy = (progress.correct + progress.near * 0.5) / progress.attempts;
   const recentMistake = progress.streak === 0 && progress.wrong > 0;
   const due = !progress.nextDueAt || new Date(progress.nextDueAt) <= now;
-  return 0.5 + (1 - accuracy) * 3 + (recentMistake ? 5 : 0) + (due ? 2 : 0);
+  return 0.5 + (1 - accuracy) * 3 + (recentMistake ? 5 : 0) + (due ? 2 : 0) + noveltyBonus(vocabulary, now) / 100;
 }
 
 export function selectNextClozeVocabulary(all, questionIndex = 0, excludeId = null, now = new Date(), random = Math.random) {
