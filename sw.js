@@ -1,5 +1,9 @@
-const CACHE_PREFIX = 'vokabeltrainer-test-';
+// Cache Storage is shared by the two GitHub Pages paths on the same origin.
+// Use independent prefixes and never delete another environment's caches.
+const IS_PREVIEW = new URL(self.registration.scope).pathname.endsWith('/test/');
+const CACHE_PREFIX = IS_PREVIEW ? 'vokabeltrainer-test-' : 'vokabeltrainer-';
 const CACHE = CACHE_PREFIX + 'v9';
+const isOwnCache = key => key.startsWith(CACHE_PREFIX) && (IS_PREVIEW || !key.startsWith('vokabeltrainer-test-'));
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest', './icon.svg',
   './data/vocabulary.csv',
@@ -7,7 +11,8 @@ const ASSETS = [
   './src/repository/indexedDbVocabularyRepository.js',
   './src/services/answerEvaluationService.js', './src/services/learningEngine.js',
   './src/services/grammarClozeService.js', './src/services/clozeService.js', './src/services/speechService.js', './src/services/multipleChoiceService.js',
-  './src/services/csvVocabularyService.js', './src/services/progressBackupService.js'
+  './src/services/csvVocabularyService.js', './src/services/progressBackupService.js',
+  './src/services/oralQuizService.js'
 ];
 
 self.addEventListener('install', event => {
@@ -16,7 +21,7 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE).map(key => caches.delete(key))))
+    .then(keys => Promise.all(keys.filter(key => isOwnCache(key) && key !== CACHE).map(key => caches.delete(key))))
     .then(() => self.clients.claim()));
 });
 
@@ -40,11 +45,12 @@ async function networkFirst(request) {
     }
     return response;
   } catch (error) {
-    const cached = await caches.match(request);
+    const cache = await caches.open(CACHE);
+    const cached = await cache.match(request);
     if (cached) return cached;
 
     if (request.mode === 'navigate') {
-      const fallback = await caches.match('./index.html');
+      const fallback = await cache.match('./index.html');
       if (fallback) return fallback;
     }
     throw error;
