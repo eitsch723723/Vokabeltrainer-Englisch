@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 async function loadPreview(page) {
   await page.goto('./');
@@ -70,10 +71,8 @@ test('input, multiple choice and cloze modes still work and save learning progre
   await loadPreview(page);
   const before = await databaseSnapshot(page);
   await page.locator('[data-mode="input"]').click();
-  await page.locator('#start-learning').click().catch(async () => {
-    await page.locator('#setup-next').click();
-    await page.locator('#start-learning').click();
-  });
+  if (await page.locator('#setup-next').count()) await page.locator('#setup-next').click();
+  await page.locator('#start-learning').click();
   await page.locator('#answer-input').fill('not-a-real-translation-xyz');
   await page.locator('#answer-form button[type="submit"]').click();
   await expect(page.locator('.feedback')).toContainText('Noch nicht richtig');
@@ -109,7 +108,13 @@ test('progress export downloads a valid backup', async ({ page }) => {
     page.locator('#export-progress').click()
   ]);
   expect(download.suggestedFilename()).toMatch(/^vokabeltrainer-lernstand-\d{4}-\d\d-\d\d\.json$/);
-  await expect(page.getByRole('status')).toContainText('exportiert');
+  const backup = JSON.parse(await readFile(await download.path(), 'utf8'));
+  expect(backup.format).toBe('vokabeltrainer-learning-progress');
+  expect(backup.progress.length).toBeGreaterThan(100);
+  await page.locator('#progress-file').setInputFiles({
+    name: 'lernstand.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup))
+  });
+  await expect(page.getByRole('status')).toContainText('Lernstände wiederhergestellt');
 });
 
 test('production and preview store progress separately under the same origin', async ({ page }) => {
