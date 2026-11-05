@@ -359,7 +359,10 @@ test('navigation declares four balanced tabs', async () => {
 test('preview PWA cache is isolated from production', async () => {
   const sw = await readFile(new URL('../sw.js', import.meta.url), 'utf8');
   const repository = await readFile(new URL('../src/repository/indexedDbVocabularyRepository.js', import.meta.url), 'utf8');
+  assert.match(sw, /IS_PREVIEW \? 'vokabeltrainer-test-' : 'vokabeltrainer-'/);
   assert.match(sw, /key\.startsWith\(CACHE_PREFIX\)/);
+  assert.match(sw, /!key\.startsWith\('vokabeltrainer-test-'\)/);
+  assert.match(sw, /src\/services\/oralQuizService\.js/);
   assert.match(repository, /vokabeltrainer-englisch-test/);
 });
 
