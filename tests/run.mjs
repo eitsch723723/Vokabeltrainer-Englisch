@@ -113,6 +113,18 @@ test('parses repository CSV including quoted comma and alternatives', () => {
   assert.equal(v.provenance.input, 'repository-csv');
 });
 
+test('parses escaped quotes and newlines inside quoted CSV cells', () => {
+  const csv = 'id,english,german\r\nv001,"say ""hello""\nagain",Hallo\r\n';
+  const [v] = parseVocabularyCsv(csv);
+  assert.equal(v.english, 'say "hello" again');
+});
+
+test('rejects quote characters in invalid CSV positions', () => {
+  assert.throws(() => parseVocabularyCsv('id,english,german\nv001,ab"cd",Haus'), /ungültiger Position/);
+  assert.throws(() => parseVocabularyCsv('id,english,german\nv001,"ok"x,Haus'), /nach einem schließenden Anführungszeichen/);
+  assert.throws(() => parseVocabularyCsv('id,english,german\nv001,"unfinished,Haus'), /nicht geschlossenes Anführungszeichen/);
+});
+
 test('rejects duplicate repository IDs', () => {
   const csv = 'id,english,german\nv001,house,Haus\nv001,school,Schule\n';
   assert.throws(() => parseVocabularyCsv(csv), /Doppelte ID/);
@@ -157,6 +169,33 @@ test('progress backup restores learning without changing repository vocabulary t
   assert.equal(result.vocabularies[0].german, 'das Haus');
   assert.equal(result.vocabularies[0].learning[DIRECTIONS.EN_DE].attempts, 1);
   assert.equal(result.restored, 1);
+});
+
+test('progress backup rejects answer counts that do not match attempts', () => {
+  const backup = createProgressBackup([createVocabulary({ id: 'v001', english: 'house', german: 'Haus' })]);
+  backup.progress[0].learning[DIRECTIONS.EN_DE].correct = 1;
+  assert.throws(() => applyProgressBackup([createVocabulary({ id: 'v001', english: 'house', german: 'Haus' })], backup), /Antwortzähler/);
+});
+
+test('progress backup rejects impossible streaks, invalid dates and malformed history', () => {
+  const makeBackup = () => createProgressBackup([createVocabulary({ id: 'v001', english: 'house', german: 'Haus' })]);
+  const vocabulary = [createVocabulary({ id: 'v001', english: 'house', german: 'Haus' })];
+
+  const streakBackup = makeBackup();
+  streakBackup.progress[0].learning[DIRECTIONS.EN_DE].streak = 1;
+  assert.throws(() => applyProgressBackup(vocabulary, streakBackup), /richtige Serie/);
+
+  const dateBackup = makeBackup();
+  dateBackup.progress[0].learning[DIRECTIONS.EN_DE].nextDueAt = 'not-a-date';
+  assert.throws(() => applyProgressBackup(vocabulary, dateBackup), /Zeitwert/);
+
+  const fractionBackup = makeBackup();
+  fractionBackup.progress[0].learning[DIRECTIONS.EN_DE].attempts = 0.5;
+  assert.throws(() => applyProgressBackup(vocabulary, fractionBackup), /attempts/);
+
+  const historyBackup = makeBackup();
+  historyBackup.progress[0].history = [{ direction: 'sideways', result: 'correct', answeredAt: '2026-11-05T12:00:00.000Z' }];
+  assert.throws(() => applyProgressBackup(vocabulary, historyBackup), /Verlaufseintrag/);
 });
 
 test('migrates legacy version 0', () => {

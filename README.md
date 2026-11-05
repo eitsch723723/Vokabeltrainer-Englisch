@@ -24,7 +24,7 @@ Regeln:
 - `english` und `german` sind Pflichtfelder.
 - `added_at` ist das einmalige Hinzufügedatum im Format `YYYY-MM-DD`. Vorhandene Altvokabeln ohne bekanntes Datum lassen das Feld leer; neue Vokabeln erhalten beim Import das tatsächliche Datum. Korrekturen bestehender Einträge ändern das Datum nicht.
 - Mehrere alternative korrekte Antworten werden innerhalb der jeweiligen Alternativspalte mit `|` getrennt.
-- CSV-Felder mit Kommas müssen in doppelte Anführungszeichen gesetzt werden.
+- CSV-Felder mit Kommas oder Zeilenumbrüchen müssen vollständig in doppelte Anführungszeichen gesetzt werden. Ein Anführungszeichen im Feld wird als `""` geschrieben. Fehlerhafte Anführungszeichen werden beim Laden mit Zeilennummer abgewiesen.
 - Wird eine vorhandene Vokabel korrigiert, bleibt ihre ID unverändert. Dadurch bleibt der lokale Lernstand erhalten.
 - Wird eine ID aus der CSV entfernt, verschwindet diese Vokabel beim nächsten Abgleich auch aus der App.
 
@@ -68,6 +68,8 @@ Kann die CSV vorübergehend nicht geladen werden, verwendet die App die zuletzt 
 ## Lernstand sichern
 
 Die App kann den lokalen Lernstand als JSON exportieren und später wiederherstellen. Diese Datei enthält nur Vokabel-IDs, Lernstände und Lernhistorie. Sie enthält keine Vokabeltexte und kann die Repository-Vokabeln weder anlegen noch verändern. Beim Wiederherstellen werden nur IDs übernommen, die auch in der aktuellen Repository-CSV vorhanden sind.
+
+Vor dem Wiederherstellen prüft die App, ob Antwortzähler und Versuche zusammenpassen, die richtige Serie möglich ist und Zeitangaben sowie Verlaufseinträge gültig sind. Eine ungültige Sicherung wird vollständig abgewiesen.
 
 ## Lernlogik
 
