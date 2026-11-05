@@ -1,7 +1,7 @@
 import { IndexedDbVocabularyRepository } from './repository/indexedDbVocabularyRepository.js';
 import { DIRECTIONS } from './domain/vocabulary.js';
 import { evaluateAnswer, normalizeAnswer } from './services/answerEvaluationService.js';
-import { selectNextVocabulary, updateProgress, masteryLevel, resolveQuestionDirection, RANDOM_DIRECTION } from './services/learningEngine.js';
+import { selectNextVocabulary, vocabularyWeight, updateProgress, masteryLevel, resolveQuestionDirection, RANDOM_DIRECTION } from './services/learningEngine.js';
 import { speakEnglish } from './services/speechService.js';
 import { buildClozeQuestion, clozeVocabulary, selectNextClozeVocabulary } from './services/clozeService.js';
 import { buildChoices } from './services/multipleChoiceService.js';
@@ -19,6 +19,7 @@ const state = {
   message: null,
   cacheWarning: false,
   sourceStatus: 'loading',
+  oral: { active: false, currentId: null, direction: null, correctIds: new Set(), wrongIds: new Set(), previousId: null },
   learning: {
     active: false,
     mode: 'choice',
@@ -77,6 +78,7 @@ async function syncVocabulary(cached = state.vocabularies) {
   }
 
   state.vocabularies = sortVocabulary(merged);
+  if (state.oral.active) state.oral.active = false;
   state.sourceStatus = 'repository';
   if (state.learning.mode === 'cloze') state.learning.active = false;
 
@@ -116,6 +118,7 @@ function renderMessage() {
 }
 
 function renderView() {
+  if (state.view === 'oral') return renderOral();
   if (state.view === 'learn') return renderLearn();
   if (state.view === 'vocab') return renderVocabularyList();
   if (state.view === 'progress') return renderProgress();
@@ -123,7 +126,7 @@ function renderView() {
 }
 
 function renderNav() {
-  const items = [['learn', 'Lernen'], ['vocab', 'Vokabeln'], ['progress', 'Fortschritt']];
+  const items = [['learn', 'Lernen'], ['oral', 'Abfragen'], ['vocab', 'Vokabeln'], ['progress', 'Fortschritt']];
   return `<nav class="nav" aria-label="Hauptnavigation">${items.map(([id, label]) => `
     <button data-nav="${id}" class="${state.view === id ? 'active' : ''}" aria-current="${state.view === id ? 'page' : 'false'}">${label}</button>`).join('')}</nav>`;
 }
@@ -204,6 +207,57 @@ function renderFeedback(feedback, correctAnswer) {
   return `<div class="stack"><div class="feedback ${cls}" role="status"><div>${title}</div>${feedback.result !== 'correct' ? `<div class="small" style="margin-top:6px">Richtige Antwort: ${escapeHtml(correctAnswer)}</div>` : ''}</div><button class="button" id="next-question">${state.learning.mode === 'cloze' ? 'Nächste Aufgabe' : 'Nächste Vokabel'}</button></div>`;
 }
 
+function renderOral() {
+  const session = state.oral;
+  if (!session.active) return `<section class="learning-shell"><div class="card stack"><h2>Mündlich abfragen</h2><p>Die abfragende Person sieht Frage und Lösung. Richtige Vokabeln werden in dieser Runde nicht wiederholt. Falsche kommen später erneut vor. Die Bewertungen werden nicht gespeichert.</p><button class="button" id="start-oral" ${state.vocabularies.length ? '' : 'disabled'}>Abfragerunde starten</button></div></section>`;
+  const current = state.vocabularies.find(v => v.id === session.currentId);
+  if (!current) return `<section class="learning-shell"><div class="card stack"><h2>Runde abgeschlossen</h2><p>Alle ${session.correctIds.size} Vokabeln wurden richtig beantwortet.</p><button class="button" id="stop-oral">Neue Runde</button></div></section>`;
+  const enDe = session.direction === DIRECTIONS.EN_DE;
+  const question = enDe ? current.english : current.german;
+  const answers = enDe ? [current.german, ...(current.alternatives?.german ?? [])] : [current.english, ...(current.alternatives?.english ?? [])];
+  return `<section class="learning-shell"><div class="card stack"><div class="row spread"><span class="badge">${enDe ? 'Englisch → Deutsch' : 'Deutsch → Englisch'}</span><button class="button ghost" id="stop-oral">Beenden</button></div><div class="question"><div class="question-label">Frage</div><div class="question-word">${escapeHtml(question)}</div></div><div class="question"><div class="question-label">Richtige Antwort</div><div class="question-word">${escapeHtml(answers.join(' / '))}</div></div><p class="muted small">Richtig: ${session.correctIds.size} · Noch offen: ${state.vocabularies.length - session.correctIds.size}</p><div class="row"><button class="button secondary" data-oral-result="wrong">Falsch</button><button class="button" data-oral-result="correct">Richtig</button></div></div></section>`;
+}
+
+function nextOralQuestion() {
+  const session = state.oral;
+  const pool = state.vocabularies.filter(v => !session.correctIds.has(v.id));
+  if (!pool.length) { session.currentId = null; session.direction = null; return; }
+  session.direction = resolveQuestionDirection(RANDOM_DIRECTION);
+  const withoutPrevious = pool.filter(v => v.id !== session.previousId);
+  const candidates = withoutPrevious.length ? withoutPrevious : pool;
+  const weights = candidates.map(v => {
+    const base = vocabularyWeight(v, session.direction);
+    return base + (session.wrongIds.has(v.id) ? Math.max(250, base * 0.7) : 0);
+  });
+  let remaining = Math.random() * weights.reduce((sum, w) => sum + w, 0);
+  let index = weights.findIndex(w => (remaining -= w) < 0);
+  if (index < 0) index = candidates.length - 1;
+  session.currentId = candidates[index].id;
+}
+
+function bindOralEvents() {
+  document.getElementById('start-oral')?.addEventListener('click', () => {
+    state.oral = { active: true, currentId: null, direction: null, correctIds: new Set(), wrongIds: new Set(), previousId: null };
+    nextOralQuestion();
+    render();
+  });
+  document.getElementById('stop-oral')?.addEventListener('click', () => {
+    state.oral.active = false;
+    render();
+  });
+  document.querySelectorAll('[data-oral-result]').forEach(button => button.addEventListener('click', () => {
+    const session = state.oral;
+    if (!session.active || !session.currentId) return;
+    if (button.dataset.oralResult === 'correct') {
+      session.correctIds.add(session.currentId);
+      session.wrongIds.delete(session.currentId);
+    } else session.wrongIds.add(session.currentId);
+    session.previousId = session.currentId;
+    nextOralQuestion();
+    render();
+  }));
+}
+
 function renderVocabularyList() {
   const q = normalizeAnswer(state.search);
   const rows = state.vocabularies.filter(v => !q || normalizeAnswer(v.english).includes(q) || normalizeAnswer(v.german).includes(q));
@@ -262,6 +316,7 @@ function bindCommonEvents() {
 function bindViewEvents() {
   document.querySelectorAll('#refresh-vocabulary').forEach(button => button.addEventListener('click', refreshVocabulary));
 
+  if (state.view === 'oral') bindOralEvents();
   if (state.view === 'learn') bindLearnEvents();
   if (state.view === 'vocab') bindVocabularyEvents();
   if (state.view === 'progress') bindProgressEvents();
