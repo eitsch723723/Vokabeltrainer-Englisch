@@ -90,6 +90,8 @@ function parseCsvRows(text) {
   let row = [];
   let field = '';
   let quoted = false;
+  let afterQuote = false;
+  let line = 1;
 
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
@@ -100,14 +102,39 @@ function parseCsvRows(text) {
         i++;
       } else if (char === '"') {
         quoted = false;
+        afterQuote = true;
       } else {
         field += char;
+        if (char === '\n') line++;
       }
       continue;
     }
 
-    if (char === '"') {
+    if (afterQuote && char === ',') {
+      row.push(field);
+      field = '';
+      afterQuote = false;
+    } else if (afterQuote && char === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+      afterQuote = false;
+      line++;
+    } else if (afterQuote && char === '\r' && text[i + 1] === '\n') {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+      afterQuote = false;
+      i++;
+      line++;
+    } else if (afterQuote) {
+      throw new Error(`CSV enthält nach einem schließenden Anführungszeichen ungültige Zeichen (Zeile ${line}).`);
+    } else if (char === '"' && field.length === 0) {
       quoted = true;
+    } else if (char === '"') {
+      throw new Error(`CSV enthält ein Anführungszeichen an ungültiger Position (Zeile ${line}).`);
     } else if (char === ',') {
       row.push(field);
       field = '';
@@ -116,13 +143,14 @@ function parseCsvRows(text) {
       rows.push(row);
       row = [];
       field = '';
+      line++;
     } else {
       field += char;
     }
   }
 
-  if (quoted) throw new Error('CSV enthält ein nicht geschlossenes Anführungszeichen.');
-  if (field.length || row.length) {
+  if (quoted) throw new Error(`CSV enthält ein nicht geschlossenes Anführungszeichen (Zeile ${line}).`);
+  if (field.length || row.length || afterQuote) {
     row.push(field.replace(/\r$/, ''));
     rows.push(row);
   }
