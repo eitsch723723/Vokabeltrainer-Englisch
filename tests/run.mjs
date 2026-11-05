@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { evaluateAnswer, normalizeAnswer } from '../src/services/answerEvaluationService.js';
 import { createVocabulary, DIRECTIONS } from '../src/domain/vocabulary.js';
 import { migrateVocabulary } from '../src/domain/migrations.js';
-import { updateProgress, priorityScore, selectNextVocabulary, resolveQuestionDirection, RANDOM_DIRECTION } from '../src/services/learningEngine.js';
+import { updateProgress, priorityScore, noveltyBonus, selectNextVocabulary, resolveQuestionDirection, RANDOM_DIRECTION } from '../src/services/learningEngine.js';
 import { buildChoices } from '../src/services/multipleChoiceService.js';
 import { parseVocabularyCsv, mergeRepositoryVocabulary } from '../src/services/csvVocabularyService.js';
 import { createProgressBackup, applyProgressBackup } from '../src/services/progressBackupService.js';
@@ -74,7 +74,19 @@ test('new vocabulary has higher priority', () => {
   const fresh = createVocabulary({ id: 'v002', english: 'book', german: 'Buch' });
   const practiced = updateProgress(createVocabulary({ id: 'v001', english: 'house', german: 'Haus' }), DIRECTIONS.EN_DE, 'correct', now);
   assert.ok(priorityScore(fresh, DIRECTIONS.EN_DE, now) > priorityScore(practiced, DIRECTIONS.EN_DE, now));
-  assert.equal(selectNextVocabulary([practiced, fresh], DIRECTIONS.EN_DE, now).id, fresh.id);
+  assert.equal(selectNextVocabulary([practiced, fresh], DIRECTIONS.EN_DE, now, null, () => 0.99).id, fresh.id);
+});
+
+test('addition date survives CSV import and merge', () => {
+  const source = parseVocabularyCsv('id,english,german,added_at\\nv1,house,Haus,2026-11-05');
+  assert.equal(source[0].addedAt, '2026-11-05');
+  assert.equal(mergeRepositoryVocabulary(source, [createVocabulary({ id: 'v1', english: 'house', german: 'Haus' })])[0].addedAt, '2026-11-05');
+});
+
+test('novelty bonus expires after fourteen days', () => {
+  const v = createVocabulary({ id: 'v1', english: 'house', german: 'Haus', addedAt: '2026-11-05' });
+  assert.ok(noveltyBonus(v, new Date('2026-11-05T12:00:00Z')) > 0);
+  assert.equal(noveltyBonus(v, new Date('2026-11-19T00:00:00Z')), 0);
 });
 
 test('multiple choice contains exactly one correct answer', () => {
