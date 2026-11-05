@@ -2,7 +2,7 @@ name: Deploy GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/oral-vocabulary-quiz]
   workflow_dispatch:
 
 permissions:
@@ -21,8 +21,26 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout production from main
         uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+          persist-credentials: false
+      - name: Checkout preview from feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/oral-vocabulary-quiz
+          path: preview
+          persist-credentials: false
+      - name: Assemble isolated production and preview sites
+        run: |
+          mkdir -p site/test
+          rsync -a --exclude='.git/' --exclude='.github/' production/ site/
+          rsync -a --exclude='.git/' --exclude='.github/' preview/ site/test/
+          test -f site/index.html
+          test -f site/test/index.html
+          test -f site/test/data/vocabulary.csv
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
@@ -30,7 +48,7 @@ jobs:
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: site
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
