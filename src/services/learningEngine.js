@@ -53,7 +53,7 @@ export function masteryLevel(progress) {
 
 export function priorityScore(vocabulary, direction, now = new Date()) {
   const p = vocabulary.learning[direction];
-  if (!p.attempts) return 100000;
+  if (!p.attempts) return 150;
   const dueAt = p.nextDueAt ? new Date(p.nextDueAt).getTime() : 0;
   const overdueHours = Math.max(0, (now.getTime() - dueAt) / 3600000);
   const accuracy = (p.correct + p.near * 0.5) / p.attempts;
@@ -63,12 +63,27 @@ export function priorityScore(vocabulary, direction, now = new Date()) {
   return dueBoost + weakness + maintenance;
 }
 
-export function selectNextVocabulary(vocabularies, direction, now = new Date(), excludeId = null) {
-  return [...vocabularies]
-    .filter(v => v.id !== excludeId)
-    .sort((a, b) => {
-      const scoreDiff = priorityScore(b, direction, now) - priorityScore(a, direction, now);
-      if (scoreDiff) return scoreDiff;
-      return String(a.id).localeCompare(String(b.id));
-    })[0] ?? null;
+export function noveltyBonus(vocabulary, now = new Date()) {
+  if (!vocabulary.addedAt || !/^\d{4}-\d{2}-\d{2}$/.test(vocabulary.addedAt)) return 0;
+  const date = new Date(vocabulary.addedAt + 'T00:00:00Z');
+  if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== vocabulary.addedAt) return 0;
+  const age = (now.getTime() - date.getTime()) / DAY_MS;
+  return age < 0 || age >= 14 ? 0 : 300 * (1 - age / 14);
+}
+
+export function vocabularyWeight(vocabulary, direction, now = new Date()) {
+  return Math.max(1, priorityScore(vocabulary, direction, now) + noveltyBonus(vocabulary, now));
+}
+
+export function selectNextVocabulary(vocabularies, direction, now = new Date(), excludeId = null, random = Math.random) {
+  let pool = vocabularies.filter(v => v.id !== excludeId);
+  if (!pool.length) pool = [...vocabularies];
+  if (!pool.length) return null;
+  const weights = pool.map(v => vocabularyWeight(v, direction, now));
+  let remaining = random() * weights.reduce((sum, weight) => sum + weight, 0);
+  for (let i = 0; i < pool.length; i++) {
+    remaining -= weights[i];
+    if (remaining < 0) return pool[i];
+  }
+  return pool[pool.length - 1];
 }
