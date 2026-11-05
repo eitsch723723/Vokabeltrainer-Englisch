@@ -20,12 +20,14 @@ export function createVocabulary({
   german,
   alternatives = { english: [], german: [] },
   provenance = { input: 'manual', translation: 'manual', confirmedByUser: true },
+  addedAt = null,
   createdAt = new Date().toISOString()
 }) {
   const now = createdAt;
   return validateVocabulary({
     schemaVersion: CURRENT_SCHEMA_VERSION,
     id,
+    addedAt,
     english: cleanTerm(english),
     german: cleanTerm(german),
     alternatives: {
