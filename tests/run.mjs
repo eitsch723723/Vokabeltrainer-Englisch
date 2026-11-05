@@ -5,6 +5,7 @@ import { createVocabulary, DIRECTIONS } from '../src/domain/vocabulary.js';
 import { migrateVocabulary } from '../src/domain/migrations.js';
 import { updateProgress, priorityScore, noveltyBonus, selectNextVocabulary, resolveQuestionDirection, RANDOM_DIRECTION } from '../src/services/learningEngine.js';
 import { buildChoices } from '../src/services/multipleChoiceService.js';
+import { ORAL_ROUND_SIZE, startOralSession, answerOralQuestion, continueOralSession, oralRoundSummary } from '../src/services/oralQuizService.js';
 import { parseVocabularyCsv, mergeRepositoryVocabulary } from '../src/services/csvVocabularyService.js';
 import { createProgressBackup, applyProgressBackup } from '../src/services/progressBackupService.js';
 
@@ -257,6 +258,109 @@ test('weak cloze concepts get more practice than new or mastered concepts and re
   const backup = createProgressBackup(rows);
   const restored = applyProgressBackup(rows.map(v => createVocabulary(v)), backup).vocabularies;
   assert.equal(clozeWeight(restored[0], now), clozeWeight(rows[0], now));
+});
+
+
+const oralFixture = (count = 25) => Array.from({ length: count }, (_, i) =>
+  createVocabulary({ id: 'oral-' + i, english: 'word' + i, german: 'Wort' + i, addedAt: i === 0 ? '2026-11-05' : null })
+);
+
+test('oral quiz pauses exactly after ten answers and offers a next batch', () => {
+  const words = oralFixture();
+  let session = startOralSession(words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  const ids = new Set();
+  assert.equal(ORAL_ROUND_SIZE, 10);
+  for (let i = 0; i < ORAL_ROUND_SIZE; i++) {
+    assert.equal(session.phase, 'question');
+    assert.equal(oralRoundSummary(session).answered, i);
+    ids.add(session.current.id);
+    session = answerOralQuestion(session, 'correct', words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  }
+  assert.equal(ids.size, 10);
+  assert.equal(session.phase, 'round-complete');
+  assert.equal(session.current, null);
+  assert.equal(oralRoundSummary(session).correct, 10);
+  assert.throws(() => answerOralQuestion(session, 'correct', words), /Keine offene/);
+  session = continueOralSession(session, words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  assert.equal(session.phase, 'question');
+  assert.equal(oralRoundSummary(session).number, 2);
+  assert.equal(oralRoundSummary(session).answered, 0);
+  assert.ok(!ids.has(session.current.id), 'previously mastered vocabulary must not return');
+});
+
+test('oral quiz retries wrong words only in a later batch when enough words exist', () => {
+  const words = oralFixture(20);
+  let session = startOralSession(words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  const asked = [];
+  for (let i = 0; i < 10; i++) {
+    asked.push(session.current.id);
+    session = answerOralQuestion(session, 'wrong', words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  }
+  assert.equal(new Set(asked).size, 10);
+  assert.equal(oralRoundSummary(session).wrong, 10);
+  session = continueOralSession(session, words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  assert.ok(asked.includes(session.current.id), 'an unmastered word can return');
+  assert.notEqual(session.current.id, asked.at(-1), 'never directly repeat the previous word when alternatives exist');
+});
+
+test('oral quiz ratings are session-only and do not mutate persistent learning data', () => {
+  const words = oralFixture();
+  const before = JSON.stringify(words);
+  let session = startOralSession(words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  session = answerOralQuestion(session, 'wrong', words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  session = answerOralQuestion(session, 'correct', words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  assert.equal(JSON.stringify(words), before);
+  assert.equal(oralRoundSummary(session).answered, 2);
+  assert.equal(oralRoundSummary(session).mastered, 1);
+  assert.equal(oralRoundSummary(session).wrong, 1);
+});
+
+test('oral quiz uses both translation directions', () => {
+  const words = oralFixture();
+  const randomValues = [0.1, 0, 0.9, 0];
+  const random = () => randomValues.shift() ?? 0;
+  let session = startOralSession(words, new Date('2026-11-05T12:00:00Z'), random);
+  assert.equal(session.current.direction, DIRECTIONS.EN_DE);
+  session = answerOralQuestion(session, 'wrong', words, new Date('2026-11-05T12:00:00Z'), random);
+  assert.equal(session.current.direction, DIRECTIONS.DE_EN);
+});
+
+test('oral quiz ends if every vocabulary is mastered before ten questions', () => {
+  const words = oralFixture(2);
+  let session = startOralSession(words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  session = answerOralQuestion(session, 'correct', words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  session = answerOralQuestion(session, 'correct', words, new Date('2026-11-05T12:00:00Z'), () => 0);
+  assert.equal(session.phase, 'finished');
+  assert.equal(oralRoundSummary(session).answered, 2);
+});
+
+test('oral quiz rejects invalid result and premature continuation', () => {
+  const words = oralFixture();
+  const session = startOralSession(words);
+  assert.throws(() => answerOralQuestion(session, 'near', words), /Ungültige mündliche Bewertung/);
+  assert.throws(() => continueOralSession(session, words), /noch nicht beendet/);
+  assert.equal(startOralSession([]).phase, 'finished');
+});
+
+test('old vocabulary receives no addition-date bonus while dated additions do', () => {
+  const words = oralFixture(2);
+  const now = new Date('2026-11-05T12:00:00Z');
+  assert.equal(noveltyBonus(words[1], now), 0);
+  assert.ok(noveltyBonus(words[0], now) > noveltyBonus(words[1], now));
+});
+
+test('navigation declares four balanced tabs', async () => {
+  const appSource = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  const css = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
+  assert.match(appSource, /\['oral', 'Abfragen'\]/);
+  assert.match(css, /\.nav\s*\{[^}]*grid-template-columns:\s*repeat\(4,/s);
+});
+
+test('preview PWA cache is isolated from production', async () => {
+  const sw = await readFile(new URL('../sw.js', import.meta.url), 'utf8');
+  const repository = await readFile(new URL('../src/repository/indexedDbVocabularyRepository.js', import.meta.url), 'utf8');
+  assert.match(sw, /key\.startsWith\(CACHE_PREFIX\)/);
+  assert.match(repository, /vokabeltrainer-englisch-test/);
 });
 
 let passed = 0;
