@@ -1,4 +1,5 @@
-const CACHE = 'vokabeltrainer-v8';
+const CACHE_PREFIX = 'vokabeltrainer-test-';
+const CACHE = CACHE_PREFIX + 'v9';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest', './icon.svg',
   './data/vocabulary.csv',
@@ -15,7 +16,7 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+    .then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE).map(key => caches.delete(key))))
     .then(() => self.clients.claim()));
 });
 
