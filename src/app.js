@@ -1,7 +1,8 @@
 import { IndexedDbVocabularyRepository } from './repository/indexedDbVocabularyRepository.js';
 import { DIRECTIONS } from './domain/vocabulary.js';
 import { evaluateAnswer, normalizeAnswer } from './services/answerEvaluationService.js';
-import { selectNextVocabulary, vocabularyWeight, updateProgress, masteryLevel, resolveQuestionDirection, RANDOM_DIRECTION } from './services/learningEngine.js';
+import { selectNextVocabulary, updateProgress, masteryLevel, resolveQuestionDirection, RANDOM_DIRECTION } from './services/learningEngine.js';
+import { ORAL_ROUND_SIZE, startOralSession, answerOralQuestion, continueOralSession, oralRoundSummary } from './services/oralQuizService.js';
 import { speakEnglish } from './services/speechService.js';
 import { buildClozeQuestion, clozeVocabulary, selectNextClozeVocabulary } from './services/clozeService.js';
 import { buildChoices } from './services/multipleChoiceService.js';
@@ -19,7 +20,7 @@ const state = {
   message: null,
   cacheWarning: false,
   sourceStatus: 'loading',
-  oral: { active: false, currentId: null, direction: null, correctIds: new Set(), wrongIds: new Set(), previousId: null },
+  oral: null,
   learning: {
     active: false,
     mode: 'choice',
@@ -78,7 +79,7 @@ async function syncVocabulary(cached = state.vocabularies) {
   }
 
   state.vocabularies = sortVocabulary(merged);
-  if (state.oral.active) state.oral.active = false;
+  if (state.oral) state.oral = null;
   state.sourceStatus = 'repository';
   if (state.learning.mode === 'cloze') state.learning.active = false;
 
@@ -209,51 +210,41 @@ function renderFeedback(feedback, correctAnswer) {
 
 function renderOral() {
   const session = state.oral;
-  if (!session.active) return `<section class="learning-shell"><div class="card stack"><h2>Mündlich abfragen</h2><p>Die abfragende Person sieht Frage und Lösung. Richtige Vokabeln werden in dieser Runde nicht wiederholt. Falsche kommen später erneut vor. Die Bewertungen werden nicht gespeichert.</p><button class="button" id="start-oral" ${state.vocabularies.length ? '' : 'disabled'}>Abfragerunde starten</button></div></section>`;
-  const current = state.vocabularies.find(v => v.id === session.currentId);
-  if (!current) return `<section class="learning-shell"><div class="card stack"><h2>Runde abgeschlossen</h2><p>Alle ${session.correctIds.size} Vokabeln wurden richtig beantwortet.</p><button class="button" id="stop-oral">Neue Runde</button></div></section>`;
-  const enDe = session.direction === DIRECTIONS.EN_DE;
+  if (!session) return `<section class="learning-shell"><div class="card stack"><h2>Mündlich abfragen</h2><p>Eine zweite Person liest die Vokabel vor und sieht die Lösung. Nach jeder Antwort bewertet sie mit „Richtig“ oder „Falsch“. Nach jeweils ${ORAL_ROUND_SIZE} Fragen kannst du aufhören oder weitermachen. Schwierige und kürzlich hinzugefügte Vokabeln werden bevorzugt. Die Bewertungen werden nicht gespeichert.</p><button class="button" id="start-oral" ${state.vocabularies.length ? '' : 'disabled'}>10 Vokabeln abfragen</button></div></section>`;
+
+  const summary = oralRoundSummary(session);
+  if (session.phase === 'round-complete') {
+    const remaining = state.vocabularies.length - summary.mastered;
+    return `<section class="learning-shell"><div class="card stack"><h2>Runde ${summary.number} abgeschlossen</h2><p>${summary.answered} Fragen beantwortet: <strong>${summary.correct} richtig</strong>, <strong>${summary.wrong} falsch</strong>.</p><p class="muted small">In dieser Sitzung insgesamt ${summary.mastered} verschiedene Vokabeln richtig beantwortet. ${remaining} sind noch offen.</p><div class="row"><button class="button secondary" id="stop-oral">Abfragen beenden</button>${remaining ? '<button class="button" id="continue-oral">Weitere 10 Vokabeln</button>' : ''}</div></div></section>`;
+  }
+  if (session.phase === 'finished') {
+    return `<section class="learning-shell"><div class="card stack"><h2>Alle Vokabeln geschafft</h2><p>${summary.mastered} verschiedene Vokabeln richtig beantwortet. Es sind keine weiteren Vokabeln offen.</p><button class="button" id="stop-oral">Abfragen beenden</button></div></section>`;
+  }
+
+  const current = state.vocabularies.find(v => v.id === session.current?.id);
+  if (!current) return '<section class="learning-shell"><div class="card stack"><p class="notice error">Die aktuelle Vokabel ist nicht mehr vorhanden. Bitte starte eine neue Runde.</p><button class="button" id="stop-oral">Zurück</button></div></section>';
+  const enDe = session.current.direction === DIRECTIONS.EN_DE;
   const question = enDe ? current.english : current.german;
   const answers = enDe ? [current.german, ...(current.alternatives?.german ?? [])] : [current.english, ...(current.alternatives?.english ?? [])];
-  return `<section class="learning-shell"><div class="card stack"><div class="row spread"><span class="badge">${enDe ? 'Englisch → Deutsch' : 'Deutsch → Englisch'}</span><button class="button ghost" id="stop-oral">Beenden</button></div><div class="question"><div class="question-label">Frage</div><div class="question-word">${escapeHtml(question)}</div></div><div class="question"><div class="question-label">Richtige Antwort</div><div class="question-word">${escapeHtml(answers.join(' / '))}</div></div><p class="muted small">Richtig: ${session.correctIds.size} · Noch offen: ${state.vocabularies.length - session.correctIds.size}</p><div class="row"><button class="button secondary" data-oral-result="wrong">Falsch</button><button class="button" data-oral-result="correct">Richtig</button></div></div></section>`;
-}
-
-function nextOralQuestion() {
-  const session = state.oral;
-  const pool = state.vocabularies.filter(v => !session.correctIds.has(v.id));
-  if (!pool.length) { session.currentId = null; session.direction = null; return; }
-  session.direction = resolveQuestionDirection(RANDOM_DIRECTION);
-  const withoutPrevious = pool.filter(v => v.id !== session.previousId);
-  const candidates = withoutPrevious.length ? withoutPrevious : pool;
-  const weights = candidates.map(v => {
-    const base = vocabularyWeight(v, session.direction);
-    return base + (session.wrongIds.has(v.id) ? Math.max(250, base * 0.7) : 0);
-  });
-  let remaining = Math.random() * weights.reduce((sum, w) => sum + w, 0);
-  let index = weights.findIndex(w => (remaining -= w) < 0);
-  if (index < 0) index = candidates.length - 1;
-  session.currentId = candidates[index].id;
+  return `<section class="learning-shell"><div class="card stack"><div class="row spread"><span class="badge">Runde ${summary.number} · Frage ${summary.answered + 1} von ${ORAL_ROUND_SIZE}</span><button class="button ghost" id="stop-oral">Beenden</button></div><p class="muted small">${enDe ? 'Englisch → Deutsch' : 'Deutsch → Englisch'}</p><div class="question"><div class="question-label">Frage</div><div class="question-word">${escapeHtml(question)}</div></div><div class="question"><div class="question-label">Richtige Antwort</div><div class="question-word">${escapeHtml(answers.join(' / '))}</div></div><p class="muted small">In dieser Runde: ${summary.correct} richtig · ${summary.wrong} falsch</p><div class="row"><button class="button secondary" data-oral-result="wrong">Falsch</button><button class="button" data-oral-result="correct">Richtig</button></div></div></section>`;
 }
 
 function bindOralEvents() {
   document.getElementById('start-oral')?.addEventListener('click', () => {
-    state.oral = { active: true, currentId: null, direction: null, correctIds: new Set(), wrongIds: new Set(), previousId: null };
-    nextOralQuestion();
+    state.oral = startOralSession(state.vocabularies);
+    render();
+  });
+  document.getElementById('continue-oral')?.addEventListener('click', () => {
+    state.oral = continueOralSession(state.oral, state.vocabularies);
     render();
   });
   document.getElementById('stop-oral')?.addEventListener('click', () => {
-    state.oral.active = false;
+    state.oral = null;
     render();
   });
   document.querySelectorAll('[data-oral-result]').forEach(button => button.addEventListener('click', () => {
-    const session = state.oral;
-    if (!session.active || !session.currentId) return;
-    if (button.dataset.oralResult === 'correct') {
-      session.correctIds.add(session.currentId);
-      session.wrongIds.delete(session.currentId);
-    } else session.wrongIds.add(session.currentId);
-    session.previousId = session.currentId;
-    nextOralQuestion();
+    if (state.oral?.phase !== 'question') return;
+    state.oral = answerOralQuestion(state.oral, button.dataset.oralResult, state.vocabularies);
     render();
   }));
 }
