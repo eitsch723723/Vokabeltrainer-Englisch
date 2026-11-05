@@ -78,7 +78,7 @@ test('new vocabulary has higher priority', () => {
 });
 
 test('addition date survives CSV import and merge', () => {
-  const source = parseVocabularyCsv('id,english,german,added_at\\nv1,house,Haus,2026-11-05');
+  const source = parseVocabularyCsv('id,english,german,added_at\nv1,house,Haus,2026-11-05');
   assert.equal(source[0].addedAt, '2026-11-05');
   assert.equal(mergeRepositoryVocabulary(source, [createVocabulary({ id: 'v1', english: 'house', german: 'Haus' })])[0].addedAt, '2026-11-05');
 });
