@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import { parseVocabularyCsv } from '../../src/services/csvVocabularyService.js';
 
 async function loadPreview(page) {
   await page.goto('./');
@@ -65,6 +66,53 @@ test('oral quiz has ten distinct questions, a summary, continue and stop', async
   await expect(page.locator('.badge').first()).toContainText('Runde 2 · Frage 1 von 10');
   await page.locator('#stop-oral').click();
   await expect(page.locator('#start-oral')).toBeVisible();
+});
+
+
+test('oral latest-upload selection limits questions to the newest upload', async ({ page }) => {
+  await loadPreview(page);
+  const rows = parseVocabularyCsv(await readFile(new URL('../../data/vocabulary.csv', import.meta.url), 'utf8'));
+  const batchWords = rows.filter(row => row.batchId === '2026-11-05-01');
+  expect(batchWords).toHaveLength(92);
+  const terms = new Set(batchWords.flatMap(row => [row.english, row.german]));
+
+  await page.locator('nav [data-nav="oral"]').click();
+  await expect(page.locator('#oral-selection-count')).toContainText('334 Vokabeln');
+  await page.locator('#oral-scope').selectOption('latest');
+  await expect(page.locator('#oral-selection-count')).toContainText('92 Vokabeln');
+  await expect(page.locator('#oral-selection-count')).toContainText('05.11.2026');
+  await page.locator('#start-oral').click();
+
+  for (let i = 1; i <= 10; i++) {
+    await expect(page.locator('.badge').first()).toContainText('Frage ' + i + ' von 10');
+    const term = await page.locator('.question-word').first().textContent();
+    expect(terms.has(term)).toBe(true);
+    await page.locator('[data-oral-result="correct"]').click();
+  }
+  await expect(page.locator('#continue-oral')).toBeVisible();
+  await expect(page.locator('.card')).toContainText('82 sind noch offen');
+  await page.locator('#continue-oral').click();
+  await expect(page.locator('.badge').first()).toContainText('Runde 2 · Frage 1 von 10');
+  expect(terms.has(await page.locator('.question-word').first().textContent())).toBe(true);
+  await page.locator('#stop-oral').click();
+  await expect(page.locator('#oral-scope')).toHaveValue('latest');
+});
+
+test('oral date selection offers available dates and keeps state after stopping', async ({ page }) => {
+  await loadPreview(page);
+  const before = await databaseSnapshot(page);
+  await page.locator('nav [data-nav="oral"]').click();
+  await page.locator('#oral-scope').selectOption('date');
+  await expect(page.locator('#oral-date')).toBeVisible();
+  await expect(page.locator('#oral-date')).toHaveValue('2026-11-05');
+  await expect(page.locator('#oral-selection-count')).toContainText('92 Vokabeln');
+  await page.locator('#start-oral').click();
+  await expect(page.locator('.badge').first()).toContainText('Frage 1 von 10');
+  await page.locator('[data-oral-result="wrong"]').click();
+  await page.locator('#stop-oral').click();
+  await expect(page.locator('#oral-scope')).toHaveValue('date');
+  await expect(page.locator('#oral-date')).toHaveValue('2026-11-05');
+  expect(await databaseSnapshot(page)).toEqual(before);
 });
 
 test('input, multiple choice and cloze modes still work and save learning progress', async ({ page }) => {
