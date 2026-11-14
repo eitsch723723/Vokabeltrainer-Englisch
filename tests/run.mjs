@@ -6,6 +6,7 @@ import { migrateVocabulary } from '../src/domain/migrations.js';
 import { updateProgress, priorityScore, noveltyBonus, selectNextVocabulary, resolveQuestionDirection, RANDOM_DIRECTION } from '../src/services/learningEngine.js';
 import { buildChoices } from '../src/services/multipleChoiceService.js';
 import { ORAL_ROUND_SIZE, startOralSession, answerOralQuestion, continueOralSession, oralRoundSummary } from '../src/services/oralQuizService.js';
+import { ORAL_SCOPES, availableVocabularyDates, latestVocabularyBatchId, selectOralVocabulary } from '../src/services/vocabularyBatchService.js';
 import { parseVocabularyCsv, mergeRepositoryVocabulary } from '../src/services/csvVocabularyService.js';
 import { createProgressBackup, applyProgressBackup } from '../src/services/progressBackupService.js';
 
@@ -403,6 +404,93 @@ test('preview PWA cache is isolated from production', async () => {
   assert.match(sw, /!key\.startsWith\('vokabeltrainer-test-'\)/);
   assert.match(sw, /src\/services\/oralQuizService\.js/);
   assert.match(repository, /vokabeltrainer-englisch-test/);
+});
+
+
+test('repository vocabulary maps the November 5 upload to one batch', async () => {
+  const vocabularies = parseVocabularyCsv(await readFile(new URL('../data/vocabulary.csv', import.meta.url), 'utf8'));
+  assert.equal(vocabularies.length, 334);
+  assert.equal(latestVocabularyBatchId(vocabularies), '2026-11-05-01');
+  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.LATEST).length, 92);
+  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.DATE, '2026-11-05').length, 92);
+  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.ALL).length, 334);
+  assert.equal(availableVocabularyDates(vocabularies)[0].date, '2026-11-05');
+});
+
+test('a latest upload is distinct from other uploads on the same date', () => {
+  const words = [
+    createVocabulary({ id: 'old', english: 'old', german: 'alt' }),
+    createVocabulary({ id: 'day1', english: 'morning', german: 'Morgen', addedAt: '2026-11-05', batchId: '2026-11-05-01' }),
+    createVocabulary({ id: 'day2', english: 'afternoon', german: 'Nachmittag', addedAt: '2026-11-05', batchId: '2026-11-05-02' }),
+    createVocabulary({ id: 'recent', english: 'new', german: 'neu', addedAt: '2026-11-13', batchId: '2026-11-13-01' })
+  ];
+  assert.deepEqual(selectOralVocabulary(words, ORAL_SCOPES.LATEST).map(v => v.id), ['recent']);
+  assert.deepEqual(selectOralVocabulary(words, ORAL_SCOPES.DATE, '2026-11-05').map(v => v.id), ['day1', 'day2']);
+  assert.deepEqual(availableVocabularyDates(words), [
+    { date: '2026-11-13', count: 1 }, { date: '2026-11-05', count: 2 }
+  ]);
+  assert.deepEqual(selectOralVocabulary(words, ORAL_SCOPES.DATE, '2026-11-14'), []);
+});
+
+test('latest upload on a day uses the last assigned sequence number', () => {
+  const words = [
+    createVocabulary({ id: 'first', english: 'first', german: 'erste', addedAt: '2026-11-05', batchId: '2026-11-05-01' }),
+    createVocabulary({ id: 'last', english: 'last', german: 'letzte', addedAt: '2026-11-05', batchId: '2026-11-05-02' })
+  ];
+  assert.equal(latestVocabularyBatchId(words), '2026-11-05-02');
+  assert.deepEqual(selectOralVocabulary(words, ORAL_SCOPES.LATEST).map(v => v.id), ['last']);
+});
+
+test('legacy dates remain selectable without retroactively inventing batches', () => {
+  const words = [
+    createVocabulary({ id: 'unknown', english: 'unknown', german: 'unbekannt' }),
+    createVocabulary({ id: 'dated', english: 'dated', german: 'datiert', addedAt: '2026-10-10' })
+  ];
+  assert.equal(latestVocabularyBatchId(words), null);
+  assert.deepEqual(selectOralVocabulary(words, ORAL_SCOPES.LATEST).map(v => v.id), ['dated']);
+  assert.deepEqual(selectOralVocabulary(words, ORAL_SCOPES.DATE, '2026-10-10').map(v => v.id), ['dated']);
+  assert.deepEqual(selectOralVocabulary([words[0]], ORAL_SCOPES.LATEST), []);
+  assert.deepEqual(availableVocabularyDates([words[0]]), []);
+  assert.throws(() => selectOralVocabulary(words, 'invalid'), /Ungültige Vokabelauswahl/);
+});
+
+test('invalid batch metadata is rejected, and a CSV without batch_id remains compatible', () => {
+  const oldCsv = parseVocabularyCsv('id,english,german,added_at\nv1,house,Haus,2026-11-05\n');
+  assert.equal(oldCsv[0].batchId, null);
+  const csv = 'id,english,german,added_at,batch_id\n';
+  assert.throws(() => parseVocabularyCsv(csv + 'v1,house,Haus,2026-11-05,not-a-batch'), /Ungültige Batch-ID/);
+  assert.throws(() => parseVocabularyCsv(csv + 'v1,house,Haus,2026-11-05,2026-11-06-01'), /passen nicht zusammen/);
+  const incoming = parseVocabularyCsv(csv + 'v1,house,Haus,2026-11-05,2026-11-05-01');
+  const cached = [updateProgress(createVocabulary({ id: 'v1', english: 'old', german: 'alt' }), DIRECTIONS.EN_DE, 'correct')];
+  const merged = mergeRepositoryVocabulary(incoming, cached)[0];
+  assert.equal(merged.batchId, '2026-11-05-01');
+  assert.equal(merged.learning[DIRECTIONS.EN_DE].correct, 1);
+});
+
+test('oral quiz keeps its selected vocabulary pool across ten-question rounds', () => {
+  const date = '2026-11-05';
+  const words = Array.from({ length: 15 }, (_, i) => createVocabulary({
+    id: 'set-' + i, english: 'word' + i, german: 'Wort' + i,
+    addedAt: date, batchId: i < 12 ? date + '-01' : date + '-02'
+  }));
+  const first = selectOralVocabulary(words, ORAL_SCOPES.DATE, date);
+  const last = selectOralVocabulary(words, ORAL_SCOPES.LATEST);
+  assert.equal(first.length, 15);
+  assert.equal(last.length, 3);
+  let session = startOralSession(first, new Date('2026-11-05T12:00:00Z'), () => 0);
+  for (let i = 0; i < 10; i++) {
+    assert.ok(first.some(v => v.id === session.current.id));
+    session = answerOralQuestion(session, 'correct', first, new Date('2026-11-05T12:00:00Z'), () => 0);
+  }
+  assert.equal(session.phase, 'round-complete');
+  session = continueOralSession(session, first, new Date('2026-11-05T12:00:00Z'), () => 0);
+  assert.ok(first.some(v => v.id === session.current.id));
+  let latestSession = startOralSession(last, new Date('2026-11-05T12:00:00Z'), () => 0);
+  for (let i = 0; i < 3; i++) {
+    assert.ok(last.some(v => v.id === latestSession.current.id));
+    latestSession = answerOralQuestion(latestSession, 'correct', last, new Date('2026-11-05T12:00:00Z'), () => 0);
+  }
+  assert.equal(latestSession.phase, 'finished');
 });
 
 let passed = 0;
