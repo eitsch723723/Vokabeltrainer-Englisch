@@ -13,9 +13,9 @@ Die CSV ist die maßgebliche Quelle für alle Vokabeltexte. In der App selbst k�
 Schema:
 
 ```csv
-id,english,german,english_alternatives,german_alternatives,added_at
-v0001,house,Haus,,,
-v0002,to begin,anfangen,,beginnen,2026-11-05
+id,english,german,english_alternatives,german_alternatives,added_at,batch_id
+v0001,house,Haus,,,,
+v0002,to begin,anfangen,,beginnen,2026-11-05,2026-11-05-01
 ```
 
 Regeln:
@@ -23,6 +23,7 @@ Regeln:
 - `id` muss eindeutig und dauerhaft stabil sein.
 - `english` und `german` sind Pflichtfelder.
 - `added_at` ist das einmalige Hinzufügedatum im Format `YYYY-MM-DD`. Vorhandene Altvokabeln ohne bekanntes Datum lassen das Feld leer; neue Vokabeln erhalten beim Import das tatsächliche Datum. Korrekturen bestehender Einträge ändern das Datum nicht.
+- `batch_id` identifiziert **einen zusammengehörigen Foto-Upload** (einen Vokabelsatz). Für alle neu hochgeladenen Vokabeln eines Pakets wird dieselbe unveränderliche ID `YYYY-MM-DD-NN` eingetragen, beispielsweise `2026-11-14-01`. Bei einem weiteren Upload am selben Tag erhält das neue Paket `2026-11-14-02`. `NN` ist die zweistellige, je Tag aufsteigende Upload-Nummer. Das Datum in der Batch-ID muss mit `added_at` übereinstimmen. So lässt sich der zuletzt hochgeladene Satz auch bei mehreren Paketen am gleichen Tag eindeutig bestimmen. Alte Einträge ohne Batch-ID bleiben gültig.
 - Mehrere alternative korrekte Antworten werden innerhalb der jeweiligen Alternativspalte mit `|` getrennt.
 - CSV-Felder mit Kommas oder Zeilenumbrüchen müssen vollständig in doppelte Anführungszeichen gesetzt werden. Ein Anführungszeichen im Feld wird als `""` geschrieben. Fehlerhafte Anführungszeichen werden beim Laden mit Zeilennummer abgewiesen.
 - Wird eine vorhandene Vokabel korrigiert, bleibt ihre ID unverändert. Dadurch bleibt der lokale Lernstand erhalten.
@@ -36,7 +37,7 @@ Der vorgesehene Pflegeprozess ist:
 2. ChatGPT liest die englisch-deutschen Zuordnungen aus dem Bild aus.
 3. Bereits im Bild vorhandene Zuordnungen gelten als maßgebliche Übersetzungen und dürfen nicht eigenständig durch andere Übersetzungen ersetzt werden.
 4. Unsichere oder nicht eindeutig lesbare Einträge dürfen nicht stillschweigend geraten werden.
-5. ChatGPT prüft die bestehende `data/vocabulary.csv`, vermeidet doppelte Einträge, vergibt für neue Vokabeln neue stabile IDs und setzt für sie `added_at` auf das Hinzufügedatum.
+5. ChatGPT prüft die bestehende `data/vocabulary.csv`, vermeidet doppelte Einträge und vergibt für neue Vokabeln stabile IDs. **Alle Vokabeln aus demselben Fotobatch** erhalten das tatsächliche Hinzufügedatum `added_at` und **dieselbe neue Batch-ID** (`YYYY-MM-DD-NN`). Die ID wird aus den bereits vorhandenen Batch-IDs bestimmt; bei einem zweiten Upload am selben Tag wird die Nummer hochgezählt. Korrekturen existierender Vokabeln behalten ihre bisherige ID, ihr Datum und ihre Batch-ID.
 6. ChatGPT aktualisiert die CSV im GitHub-Repository.
 7. Die App lädt die aktualisierte CSV beim nächsten Start oder über die Schaltfläche „Aktualisieren“.
 
@@ -54,6 +55,7 @@ Die Anwendung nutzt bewusst keinen Build-Schritt und keine Framework-Abhängigke
 - `src/services/answerEvaluationService.js`: Antwortnormalisierung und Tippfehlertoleranz
 - `src/services/learningEngine.js`: Spaced-Repetition-Lernstand und gewichtete Zufallsauswahl
 - `src/services/oralQuizService.js`: sitzungsbezogene mündliche Abfrage in Zehner-Runden
+- `src/services/vocabularyBatchService.js`: Auswahl nach letztem Upload oder Hinzufügedatum
 - `src/services/multipleChoiceService.js`: Multiple-Choice-Antworten
 - `src/services/speechService.js`: Aussprache über SpeechSynthesis
 - `src/app.js`: UI- und Application-Orchestrierung
@@ -79,7 +81,9 @@ Groß-/Kleinschreibung und überflüssige Leerzeichen werden ignoriert. Explizit
 
 ## Mündlich abfragen
 
-Unter „Abfragen“ startet eine zweite Person eine Runde mit zehn Vokabeln. Frage und alle hinterlegten Übersetzungen sind gleichzeitig sichtbar, die andere Person bewertet die mündliche Antwort mit „Richtig“ oder „Falsch“. Die Richtung Englisch ↔ Deutsch wird bei jeder Frage zufällig bestimmt.
+Unter „Abfragen“ wählt die abfragende Person zunächst **Alle Vokabeln**, **Letzter Vokabelsatz** oder **Nach Datum**. Bei „Nach Datum“ werden alle Vokabeln mit dem gewählten `added_at`-Datum unabhängig von der Batch-ID zusammengefasst. „Letzter Vokabelsatz“ verwendet ausschließlich die höchste Batch-ID und damit den zuletzt importierten Foto-Upload. Alte Einträge ohne bekanntes Datum lassen sich nur mit „Alle Vokabeln“ abfragen. Für ältere Offline-Kopien, die zwar ein Datum, aber noch keine Batch-ID enthalten, wird ersatzweise das jüngste Datum genutzt.
+
+Der gewählte Bestand bleibt über alle Zehner-Runden einer Sitzung hinweg aktiv. Frage und alle hinterlegten Übersetzungen sind gleichzeitig sichtbar, die zweite Person bewertet die mündliche Antwort mit „Richtig“ oder „Falsch“. Die Richtung Englisch ↔ Deutsch wird bei jeder Frage zufällig bestimmt.
 
 Nach genau zehn Bewertungen wird gestoppt und die Wahl „Abfragen beenden“ oder „Weitere 10 Vokabeln“ angezeigt. Innerhalb einer Runde werden nach Möglichkeit zehn unterschiedliche Vokabeln gefragt. Einmal richtig beantwortete Vokabeln kommen in derselben Sitzung nicht mehr vor; falsch beantwortete werden in späteren Runden bevorzugt. Bei einer vollständig durchgearbeiteten kleinen Sammlung endet die Sitzung gegebenenfalls vor zehn Fragen. Die mündlichen Bewertungen beeinflussen **nicht** den gespeicherten Lernstand. Ein erneuter Start beginnt eine neue Sitzung.
 
@@ -93,7 +97,7 @@ npm run check
 # Browsertests laufen in GitHub Actions mit Chromium und WebKit.
 ```
 
-Die Logiktests decken Antwortnormalisierung, Tippfehlertoleranz, Alternativübersetzungen, getrennte Lernrichtungen, Wiederholungsplanung, Multiple Choice, CSV-Parsing einschließlich Hinzufügedatum, doppelte IDs, Synchronisierung mit Lernstanderhalt, Löschungen, Backup, Datenmigrationen und Zehner-Runden der mündlichen Abfrage ab. GitHub Actions führt ergänzend Playwright-Browsertests für Navigation, die drei Lernmodi, Rundenablauf, Lernstand-Sicherung und getrennte Datenbanken in Chromium sowie WebKit mit iPhone-/iPad-Profilen aus. Das sind **simulierte** Browser-/Gerätetests, keine Tests auf realer Apple-Hardware.
+Die Logiktests decken Antwortnormalisierung, Tippfehlertoleranz, Alternativübersetzungen, getrennte Lernrichtungen, Wiederholungsplanung, Multiple Choice, CSV-Parsing einschließlich Hinzufügedatum und Batch-ID, doppelte IDs, Synchronisierung mit Lernstanderhalt, Löschungen, Backup, Datenmigrationen, die Auswahl nach Upload/Datum und Zehner-Runden der mündlichen Abfrage ab. GitHub Actions führt ergänzend Playwright-Browsertests für Navigation, die drei Lernmodi, Rundenablauf, Lernstand-Sicherung und getrennte Datenbanken in Chromium sowie WebKit mit iPhone-/iPad-Profilen aus. Das sind **simulierte** Browser-/Gerätetests, keine Tests auf realer Apple-Hardware.
 
 ## GitHub Pages
 
