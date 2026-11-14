@@ -2,7 +2,7 @@
 // Use independent prefixes and never delete another environment's caches.
 const IS_PREVIEW = new URL(self.registration.scope).pathname.endsWith('/test/');
 const CACHE_PREFIX = IS_PREVIEW ? 'vokabeltrainer-test-' : 'vokabeltrainer-';
-const CACHE = CACHE_PREFIX + 'v9';
+const CACHE = CACHE_PREFIX + 'v10';
 const isOwnCache = key => key.startsWith(CACHE_PREFIX) && (IS_PREVIEW || !key.startsWith('vokabeltrainer-test-'));
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest', './icon.svg',
@@ -12,7 +12,7 @@ const ASSETS = [
   './src/services/answerEvaluationService.js', './src/services/learningEngine.js',
   './src/services/grammarClozeService.js', './src/services/clozeService.js', './src/services/speechService.js', './src/services/multipleChoiceService.js',
   './src/services/csvVocabularyService.js', './src/services/progressBackupService.js',
-  './src/services/oralQuizService.js'
+  './src/services/oralQuizService.js', './src/services/vocabularyBatchService.js'
 ];
 
 self.addEventListener('install', event => {
