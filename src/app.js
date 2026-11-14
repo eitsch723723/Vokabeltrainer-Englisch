@@ -3,6 +3,7 @@ import { DIRECTIONS } from './domain/vocabulary.js';
 import { evaluateAnswer, normalizeAnswer } from './services/answerEvaluationService.js';
 import { selectNextVocabulary, updateProgress, masteryLevel, resolveQuestionDirection, RANDOM_DIRECTION } from './services/learningEngine.js';
 import { ORAL_ROUND_SIZE, startOralSession, answerOralQuestion, continueOralSession, oralRoundSummary } from './services/oralQuizService.js';
+import { ORAL_SCOPES, availableVocabularyDates, latestVocabularyBatchId, selectOralVocabulary } from './services/vocabularyBatchService.js';
 import { speakEnglish } from './services/speechService.js';
 import { buildClozeQuestion, clozeVocabulary, selectNextClozeVocabulary } from './services/clozeService.js';
 import { buildChoices } from './services/multipleChoiceService.js';
@@ -21,6 +22,8 @@ const state = {
   cacheWarning: false,
   sourceStatus: 'loading',
   oral: null,
+  oralScope: ORAL_SCOPES.ALL,
+  oralDate: '',
   learning: {
     active: false,
     mode: 'choice',
@@ -208,13 +211,53 @@ function renderFeedback(feedback, correctAnswer) {
   return `<div class="stack"><div class="feedback ${cls}" role="status"><div>${title}</div>${feedback.result !== 'correct' ? `<div class="small" style="margin-top:6px">Richtige Antwort: ${escapeHtml(correctAnswer)}</div>` : ''}</div><button class="button" id="next-question">${state.learning.mode === 'cloze' ? 'Nächste Aufgabe' : 'Nächste Vokabel'}</button></div>`;
 }
 
+function oralVocabularyPool() {
+  return selectOralVocabulary(state.vocabularies, state.oralScope, state.oralDate);
+}
+
+function renderOralSetup() {
+  const pool = oralVocabularyPool();
+  const availableDates = availableVocabularyDates(state.vocabularies);
+  const latestId = latestVocabularyBatchId(state.vocabularies);
+  const scopes = [
+    [ORAL_SCOPES.ALL, 'Alle Vokabeln'],
+    [ORAL_SCOPES.LATEST, 'Letzter Vokabelsatz'],
+    [ORAL_SCOPES.DATE, 'Nach Datum']
+  ];
+  const scopeOptions = scopes.map(([value, label]) =>
+    '<option value="' + value + '"' + (state.oralScope === value ? ' selected' : '') + '>' + label + '</option>'
+  ).join('');
+  const dateOptions = availableDates.map(({ date, count }) =>
+    '<option value="' + escapeAttribute(date) + '"' + (state.oralDate === date ? ' selected' : '') + '>' +
+    escapeHtml(date.split('-').reverse().join('.')) + ' (' + count + ' Vokabeln)</option>'
+  ).join('');
+  const datePicker = state.oralScope === ORAL_SCOPES.DATE
+    ? '<label for="oral-date">Hinzufügedatum<select id="oral-date">' + dateOptions + '</select></label>'
+    : '';
+  const batchDescription = state.oralScope === ORAL_SCOPES.LATEST && latestId
+    ? ' · Upload vom ' + escapeHtml(latestId.slice(0, 10).split('-').reverse().join('.'))
+    : '';
+  const hint = state.oralScope !== ORAL_SCOPES.ALL && !pool.length
+    ? '<p class="notice" role="status">Für diese Auswahl sind keine Vokabeln vorhanden.</p>'
+    : '';
+  return '<section class="learning-shell"><div class="card stack">' +
+    '<h2>Mündlich abfragen</h2>' +
+    '<p class="muted small">Eine zweite Person bewertet die mündlichen Antworten. Nach zehn Fragen kannst du beenden oder eine weitere Runde starten. Richtige Antworten scheiden für diese Sitzung aus.</p>' +
+    '<label for="oral-scope">Welche Vokabeln?<select id="oral-scope">' + scopeOptions + '</select></label>' +
+    datePicker +
+    '<p class="muted small" id="oral-selection-count">' + pool.length + ' Vokabeln ausgewählt' + batchDescription + '</p>' +
+    hint +
+    '<button class="button" id="start-oral"' + (pool.length ? '' : ' disabled') + '>10 Vokabeln abfragen</button>' +
+    '</div></section>';
+}
+
 function renderOral() {
   const session = state.oral;
-  if (!session) return `<section class="learning-shell"><div class="card stack"><h2>Mündlich abfragen</h2><p>Eine zweite Person liest die Vokabel vor und sieht die Lösung. Nach jeder Antwort bewertet sie mit „Richtig“ oder „Falsch“. Nach jeweils ${ORAL_ROUND_SIZE} Fragen kannst du aufhören oder weitermachen. Schwierige und kürzlich hinzugefügte Vokabeln werden bevorzugt. Die Bewertungen werden nicht gespeichert.</p><button class="button" id="start-oral" ${state.vocabularies.length ? '' : 'disabled'}>10 Vokabeln abfragen</button></div></section>`;
+  if (!session) return renderOralSetup();
 
   const summary = oralRoundSummary(session);
   if (session.phase === 'round-complete') {
-    const remaining = state.vocabularies.length - summary.mastered;
+    const remaining = oralVocabularyPool().length - summary.mastered;
     return `<section class="learning-shell"><div class="card stack"><h2>Runde ${summary.number} abgeschlossen</h2><p>${summary.answered} Fragen beantwortet: <strong>${summary.correct} richtig</strong>, <strong>${summary.wrong} falsch</strong>.</p><p class="muted small">In dieser Sitzung insgesamt ${summary.mastered} verschiedene Vokabeln richtig beantwortet. ${remaining} sind noch offen.</p><div class="row"><button class="button secondary" id="stop-oral">Abfragen beenden</button>${remaining ? '<button class="button" id="continue-oral">Weitere 10 Vokabeln</button>' : ''}</div></div></section>`;
   }
   if (session.phase === 'finished') {
@@ -230,12 +273,23 @@ function renderOral() {
 }
 
 function bindOralEvents() {
+  document.getElementById('oral-scope')?.addEventListener('change', event => {
+    state.oralScope = event.target.value;
+    if (state.oralScope === ORAL_SCOPES.DATE && !state.oralDate) {
+      state.oralDate = availableVocabularyDates(state.vocabularies)[0]?.date ?? '';
+    }
+    render();
+  });
+  document.getElementById('oral-date')?.addEventListener('change', event => {
+    state.oralDate = event.target.value;
+    render();
+  });
   document.getElementById('start-oral')?.addEventListener('click', () => {
-    state.oral = startOralSession(state.vocabularies);
+    state.oral = startOralSession(oralVocabularyPool());
     render();
   });
   document.getElementById('continue-oral')?.addEventListener('click', () => {
-    state.oral = continueOralSession(state.oral, state.vocabularies);
+    state.oral = continueOralSession(state.oral, oralVocabularyPool());
     render();
   });
   document.getElementById('stop-oral')?.addEventListener('click', () => {
@@ -244,7 +298,7 @@ function bindOralEvents() {
   });
   document.querySelectorAll('[data-oral-result]').forEach(button => button.addEventListener('click', () => {
     if (state.oral?.phase !== 'question') return;
-    state.oral = answerOralQuestion(state.oral, button.dataset.oralResult, state.vocabularies);
+    state.oral = answerOralQuestion(state.oral, button.dataset.oralResult, oralVocabularyPool());
     render();
   }));
 }
