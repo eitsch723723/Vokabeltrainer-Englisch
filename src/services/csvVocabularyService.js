@@ -29,9 +29,19 @@ export function parseVocabularyCsv(text) {
     if (seenIds.has(id)) throw new Error(`Zeile ${rowIndex + 1}: Doppelte ID "${id}".`);
     seenIds.add(id);
 
+    const addedAt = cell(row, column('added_at')) || null;
+    const batchId = cell(row, column('batch_id')) || null;
+    if (batchId && !/^\d{4}-\d{2}-\d{2}-\d{2}$/.test(batchId)) {
+      throw new Error(`Zeile ${rowIndex + 1}: Ungültige Batch-ID "${batchId}" (erwartet YYYY-MM-DD-NN).`);
+    }
+    if (batchId && (!addedAt || !batchId.startsWith(addedAt + '-'))) {
+      throw new Error(`Zeile ${rowIndex + 1}: Batch-ID und Hinzufügedatum passen nicht zusammen.`);
+    }
+
     vocabularies.push(createVocabulary({
       id,
-      addedAt: cell(row, column('added_at')) || null,
+      addedAt,
+      batchId,
       english,
       german,
       alternatives: {

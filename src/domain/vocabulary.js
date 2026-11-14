@@ -21,6 +21,7 @@ export function createVocabulary({
   alternatives = { english: [], german: [] },
   provenance = { input: 'manual', translation: 'manual', confirmedByUser: true },
   addedAt = null,
+  batchId = null,
   createdAt = new Date().toISOString()
 }) {
   const now = createdAt;
@@ -28,6 +29,7 @@ export function createVocabulary({
     schemaVersion: CURRENT_SCHEMA_VERSION,
     id,
     addedAt,
+    batchId,
     english: cleanTerm(english),
     german: cleanTerm(german),
     alternatives: {
