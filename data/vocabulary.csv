@@ -52,8 +52,8 @@ v0050,girl,Mädchen,a girl,ein Mädchen,,
 v0051,on,auf,,an|am|in|im,,
 v0052,skates,Inlineskates,,Rollschuhe|Schlittschuhe|(Inline-)Skates,,
 v0053,boy,Junge,a boy,ein Junge,,
-v0054,mother,Mutter,a mother,eine Mutter,,
-v0055,father,Vater,a father,ein Vater,,
+v0054,mother,Mutter,a mother,eine Mutter,2026-11-15,2026-11-15-01
+v0055,father,Vater,a father,ein Vater,2026-11-15,2026-11-15-01
 v0056,dog,Hund,a dog,ein Hund,,
 v0057,cat,Katze,a cat,eine Katze,,
 v0058,bird,Vogel,a bird,ein Vogel,,
@@ -135,7 +135,7 @@ v0133,to like,mögen,,gern haben,,
 v0134,to take photos,Fotos machen,,,,
 v0135,great,großartig,,toll|super,,
 v0136,big,groß,,,,
-v0137,sister,Schwester,,,,
+v0137,sister,Schwester,,,2026-11-15,2026-11-15-01
 v0138,best,beste/-r/-s,,,,
 v0139,and,und,,,,
 v0140,we're,wir sind,we are,,,
@@ -148,7 +148,7 @@ v0146,to cook,kochen,,,,
 v0147,netball,Korbball,,,,
 v0148,he's,er ist,he is,,,
 v0149,good,gut,,,,
-v0150,brother,Bruder,,,,
+v0150,brother,Bruder,,,2026-11-15,2026-11-15-01
 v0151,Who is it?,Wer ist es?,,,,
 v0152,or,oder,,,,
 v0153,I,ich,,,,
@@ -217,7 +217,7 @@ v0215,Mrs,Frau (Anrede),,,,
 v0216,teacher,Lehrer/-in,,,,
 v0217,please,bitte,,,,
 v0218,to take,nehmen,,mitnehmen|wegnehmen|bringen|mitbringen,,
-v0219,home,nach Hause,,,,
+v0219,home,Zuhause,,Heim|nach Hause,2026-11-15,2026-11-15-01
 v0220,crazy,verrückt,,,,
 v0221,Look!,Schau mal!,,Schaut mal!,,
 v0222,That's ...,Das ist ...,that is ...,,,
@@ -234,9 +234,9 @@ v0232,silly,dumm,,doof|albern,,
 v0233,to look for,suchen nach,,,,
 v0234,no,kein/-e,,,,
 v0235,today,heute,,,,
-v0236,bedroom,Schlafzimmer,,,,
+v0236,bedroom,Schlafzimmer,,,2026-11-15,2026-11-15-01
 v0237,under,unter,,,,
-v0238,bed,Bett,,,,
+v0238,bed,Bett,,,2026-11-15,2026-11-15-01
 v0239,there is,es gibt (Einzahl),,,,
 v0240,there are,es gibt (Mehrzahl),,,,
 v0241,is there,gibt es (Frage in der Einzahl),,,,
@@ -276,7 +276,7 @@ v0274,noticeboard,Pinnwand,,Schwarzes Brett,2026-11-05,2026-11-05-01
 v0275,planner,Planer,,Terminkalender,2026-11-05,2026-11-05-01
 v0276,timetable,Stundenplan,,,2026-11-05,2026-11-05-01
 v0277,problem,Problem,,Schwierigkeit,2026-11-05,2026-11-05-01
-v0278,cupboard,Küchenschrank,,Schrank,2026-11-05,2026-11-05-01
+v0278,cupboard,Küchenschrank,,Schrank,2026-11-15,2026-11-15-01
 v0279,What a mess!,Was für eine Unordnung!,,Was für eine Sauerei!,2026-11-05,2026-11-05-01
 v0280,to break a rule,gegen eine Regel verstoßen,,,2026-11-05,2026-11-05-01
 v0281,Sorry!,Entschuldigung!,,Tut mir leid!,2026-11-05,2026-11-05-01
@@ -294,7 +294,7 @@ v0292,special,besonders,,speziell,2026-11-05,2026-11-05-01
 v0293,dream,Traum,,Traum-,2026-11-05,2026-11-05-01
 v0294,to wear,anhaben,,tragen (Kleidung),2026-11-05,2026-11-05-01
 v0295,hoodie,Kapuzenpulli,,,2026-11-05,2026-11-05-01
-v0296,cap,Kappe,,Mütze,2026-11-05,2026-11-05-01
+v0296,cap,Kappe,,Mütze,2026-11-15,2026-11-15-01
 v0297,every day,jeden Tag,,,2026-11-05,2026-11-05-01
 v0298,to write,schreiben,,,2026-11-05,2026-11-05-01
 v0299,to need (to),brauchen,to need to,benötigen,2026-11-05,2026-11-05-01
@@ -308,7 +308,7 @@ v0306,audio,Audio-,,Hör-,2026-11-05,2026-11-05-01
 v0307,work,Arbeit,,,2026-11-05,2026-11-05-01
 v0308,before,vor (zeitlich),,bevor,2026-11-05,2026-11-05-01
 v0309,at home,zu Hause,,,2026-11-05,2026-11-05-01
-v0310,fun,Freude,,Spaß,2026-11-05,2026-11-05-01
+v0310,fun,lustig,,witzig|fröhlich|Freude|Spaß,2026-11-15,2026-11-15-01
 v0311,Be careful!,Vorsicht!,,Pass auf!|Passt auf!,2026-11-05,2026-11-05-01
 v0312,expensive,teuer,,,2026-11-05,2026-11-05-01
 v0313,sound,Ton,,Geräusch|Klang,2026-11-05,2026-11-05-01
@@ -333,3 +333,143 @@ v0331,font size,Schriftgröße,,,2026-11-05,2026-11-05-01
 v0332,in italics,kursiv,,,2026-11-05,2026-11-05-01
 v0333,lower-case letter,Kleinbuchstabe,,,2026-11-05,2026-11-05-01
 v0334,underlined,unterstrichen,,,2026-11-05,2026-11-05-01
+v0335,to be fun,Spaß machen,,witzig sein,2026-11-15,2026-11-15-01
+v0336,living room,Wohnzimmer,,,2026-11-15,2026-11-15-01
+v0337,garden,Garten,,,2026-11-15,2026-11-15-01
+v0338,bathroom,Bad,,Badezimmer,2026-11-15,2026-11-15-01
+v0339,kitchen,Küche,,,2026-11-15,2026-11-15-01
+v0340,to be scared (of),Angst haben (vor),to be scared of,,2026-11-15,2026-11-15-01
+v0341,to get,holen,,bringen|bekommen,2026-11-15,2026-11-15-01
+v0342,these,diese (hier),,,2026-11-15,2026-11-15-01
+v0343,different,anders,,unterschiedlich|verschieden,2026-11-15,2026-11-15-01
+v0344,armchair,Sessel,,,2026-11-15,2026-11-15-01
+v0345,bath,Bad,,Badewanne,2026-11-15,2026-11-15-01
+v0346,carpet,Teppich,,,2026-11-15,2026-11-15-01
+v0347,cooker,Herd,,,2026-11-15,2026-11-15-01
+v0348,fridge,Kühlschrank,,,2026-11-15,2026-11-15-01
+v0349,lamp,Lampe,,Leuchte,2026-11-15,2026-11-15-01
+v0350,shelf,Regal,shelves,Regalbrett,2026-11-15,2026-11-15-01
+v0351,shower,Dusche,,,2026-11-15,2026-11-15-01
+v0352,sink,Becken,,Spülbecken|Abwaschbecken,2026-11-15,2026-11-15-01
+v0353,toilet,Toilette,,,2026-11-15,2026-11-15-01
+v0354,TV,Fernsehen,television,Fernseher,2026-11-15,2026-11-15-01
+v0355,wardrobe,Kleiderschrank,,,2026-11-15,2026-11-15-01
+v0356,washbasin,Waschbecken,,,2026-11-15,2026-11-15-01
+v0357,sofa,Sofa,,,2026-11-15,2026-11-15-01
+v0358,bookshelf,Bücherregal,,,2026-11-15,2026-11-15-01
+v0359,chair,Stuhl,,,2026-11-15,2026-11-15-01
+v0360,desk,Schreibtisch,,,2026-11-15,2026-11-15-01
+v0361,mirror,Spiegel,,,2026-11-15,2026-11-15-01
+v0362,towel,Handtuch,,,2026-11-15,2026-11-15-01
+v0363,table,Tisch,,,2026-11-15,2026-11-15-01
+v0364,counter,Tresen,,,2026-11-15,2026-11-15-01
+v0365,dishes,Geschirr,,,2026-11-15,2026-11-15-01
+v0366,extractor hood,Abzugshaube,,,2026-11-15,2026-11-15-01
+v0367,oven,Backofen,,,2026-11-15,2026-11-15-01
+v0368,pot,Topf,,,2026-11-15,2026-11-15-01
+v0369,rubbish bin,Mülleimer,,,2026-11-15,2026-11-15-01
+v0370,shoe,Schuh,,,2026-11-15,2026-11-15-01
+v0371,glasses,Brille,,,2026-11-15,2026-11-15-01
+v0372,banana,Banane,,,2026-11-15,2026-11-15-01
+v0373,fire,Feuer,,,2026-11-15,2026-11-15-01
+v0374,flat,Wohnung,,,2026-11-15,2026-11-15-01
+v0375,fantasy,Fantasie,,Traum-,2026-11-15,2026-11-15-01
+v0376,because,weil,,da,2026-11-15,2026-11-15-01
+v0377,thirteen,dreizehn,,,2026-11-15,2026-11-15-01
+v0378,fourteen,vierzehn,,,2026-11-15,2026-11-15-01
+v0379,fifteen,fünfzehn,,,2026-11-15,2026-11-15-01
+v0380,sixteen,sechzehn,,,2026-11-15,2026-11-15-01
+v0381,seventeen,siebzehn,,,2026-11-15,2026-11-15-01
+v0382,eighteen,achtzehn,,,2026-11-15,2026-11-15-01
+v0383,nineteen,neunzehn,,,2026-11-15,2026-11-15-01
+v0384,twenty,zwanzig,,,2026-11-15,2026-11-15-01
+v0385,twenty-one,einundzwanzig,,,2026-11-15,2026-11-15-01
+v0386,twenty-two,zweiundzwanzig,,,2026-11-15,2026-11-15-01
+v0387,twenty-three,dreiundzwanzig,,,2026-11-15,2026-11-15-01
+v0388,twenty-four,vierundzwanzig,,,2026-11-15,2026-11-15-01
+v0389,twenty-five,fünfundzwanzig,,,2026-11-15,2026-11-15-01
+v0390,twenty-six,sechsundzwanzig,,,2026-11-15,2026-11-15-01
+v0391,twenty-seven,siebenundzwanzig,,,2026-11-15,2026-11-15-01
+v0392,twenty-eight,achtundzwanzig,,,2026-11-15,2026-11-15-01
+v0393,twenty-nine,neunundzwanzig,,,2026-11-15,2026-11-15-01
+v0394,thirty,dreißig,,,2026-11-15,2026-11-15-01
+v0395,forty,vierzig,,,2026-11-15,2026-11-15-01
+v0396,fifty,fünfzig,,,2026-11-15,2026-11-15-01
+v0397,sixty,sechzig,,,2026-11-15,2026-11-15-01
+v0398,seventy,siebzig,,,2026-11-15,2026-11-15-01
+v0399,eighty,achtzig,,,2026-11-15,2026-11-15-01
+v0400,ninety,neunzig,,,2026-11-15,2026-11-15-01
+v0401,a/one hundred,hundert,one hundred|a hundred,einhundert,2026-11-15,2026-11-15-01
+v0402,grandma,Oma,,,2026-11-15,2026-11-15-01
+v0403,grandpa,Opa,,,2026-11-15,2026-11-15-01
+v0404,uncle,Onkel,,,2026-11-15,2026-11-15-01
+v0405,aunt,Tante,,,2026-11-15,2026-11-15-01
+v0406,cousin,Cousin,,Cousine,2026-11-15,2026-11-15-01
+v0407,to work,arbeiten,,,2026-11-15,2026-11-15-01
+v0408,office,Büro,,,2026-11-15,2026-11-15-01
+v0409,free time,Freizeit,,,2026-11-15,2026-11-15-01
+v0410,to paint,anmalen,,malen,2026-11-15,2026-11-15-01
+v0411,to sell,verkaufen,,,2026-11-15,2026-11-15-01
+v0412,them,sie (Plural),,ihnen,2026-11-15,2026-11-15-01
+v0413,market,Markt,,,2026-11-15,2026-11-15-01
+v0414,when,wenn,,wann|als,2026-11-15,2026-11-15-01
+v0415,to hide,(sich) verstecken,,,2026-11-15,2026-11-15-01
+v0416,divorced,geschieden,,,2026-11-15,2026-11-15-01
+v0417,daughter,Tochter,,,2026-11-15,2026-11-15-01
+v0418,only child,Einzelkind,,,2026-11-15,2026-11-15-01
+v0419,at weekends,am Wochenende,,an den Wochenenden,2026-11-15,2026-11-15-01
+v0420,mum,Mama,,,2026-11-15,2026-11-15-01
+v0421,dad,Papa,,,2026-11-15,2026-11-15-01
+v0422,parents,Eltern,,,2026-11-15,2026-11-15-01
+v0423,son,Sohn,,,2026-11-15,2026-11-15-01
+v0424,(big/little) sister,(große/kleine) Schwester,big sister|little sister,,2026-11-15,2026-11-15-01
+v0425,(big/little) brother,(großer/kleiner) Bruder,big brother|little brother,,2026-11-15,2026-11-15-01
+v0426,stepmother,Stiefmutter,,,2026-11-15,2026-11-15-01
+v0427,stepfather,Stiefvater,,,2026-11-15,2026-11-15-01
+v0428,husband,Ehemann,,,2026-11-15,2026-11-15-01
+v0429,wife,Ehefrau,,,2026-11-15,2026-11-15-01
+v0430,grandparents,Großeltern,,,2026-11-15,2026-11-15-01
+v0431,grandmother,Großmutter,,,2026-11-15,2026-11-15-01
+v0432,grandfather,Großvater,,,2026-11-15,2026-11-15-01
+v0433,to have got,besitzen,have got,haben,2026-11-15,2026-11-15-01
+v0434,poem,Gedicht,,,2026-11-15,2026-11-15-01
+v0435,tall,groß,,hoch,2026-11-15,2026-11-15-01
+v0436,tea,Tee,,,2026-11-15,2026-11-15-01
+v0437,to stay,bleiben,,,2026-11-15,2026-11-15-01
+v0438,always,immer,,ständig,2026-11-15,2026-11-15-01
+v0439,to be early,früh dran sein,,,2026-11-15,2026-11-15-01
+v0440,to hurry,eilen,,sich beeilen,2026-11-15,2026-11-15-01
+v0441,to wait (for),warten (auf),to wait for,,2026-11-15,2026-11-15-01
+v0442,to agree (with),einer Meinung sein (mit),to agree with,zustimmen,2026-11-15,2026-11-15-01
+v0443,to love,lieben,,gern mögen,2026-11-15,2026-11-15-01
+v0444,Mr,Herr (Anrede),,,2026-11-15,2026-11-15-01
+v0445,cooking,Kochen,,,2026-11-15,2026-11-15-01
+v0446,now,jetzt,,nun,2026-11-15,2026-11-15-01
+v0447,music,Musik,,,2026-11-15,2026-11-15-01
+v0448,guitar,Gitarre,,,2026-11-15,2026-11-15-01
+v0449,every,jede/-r/-s,,,2026-11-15,2026-11-15-01
+v0450,afternoon,Nachmittag,,,2026-11-15,2026-11-15-01
+v0451,little,klein,,,2026-11-15,2026-11-15-01
+v0452,to be wrong,unrecht haben,,sich irren,2026-11-15,2026-11-15-01
+v0453,skateboarding,Skateboardfahren,,,2026-11-15,2026-11-15-01
+v0454,sometimes,manchmal,,,2026-11-15,2026-11-15-01
+v0455,wheelchair,Rollstuhl,,,2026-11-15,2026-11-15-01
+v0456,to miss,vermissen,,,2026-11-15,2026-11-15-01
+v0457,It gets on my nerves!,Es geht mir auf die Nerven!,,,2026-11-15,2026-11-15-01
+v0458,past,nach (bei Uhrzeitangaben),,,2026-11-15,2026-11-15-01
+v0459,to start,anfangen,,beginnen|starten,2026-11-15,2026-11-15-01
+v0460,to know,kennen,,wissen,2026-11-15,2026-11-15-01
+v0461,head,Kopf,,,2026-11-15,2026-11-15-01
+v0462,very,sehr,,,2026-11-15,2026-11-15-01
+v0463,of course,natürlich,,selbstverständlich,2026-11-15,2026-11-15-01
+v0464,never,nie,,niemals,2026-11-15,2026-11-15-01
+v0465,to lose,verlieren,,,2026-11-15,2026-11-15-01
+v0466,usually,normalerweise,,gewöhnlich|meistens,2026-11-15,2026-11-15-01
+v0467,to put,setzen,,stellen|legen,2026-11-15,2026-11-15-01
+v0468,busy,beschäftigt,,,2026-11-15,2026-11-15-01
+v0469,lots (of),viel/-e,lots of,jede Menge,2026-11-15,2026-11-15-01
+v0470,often,oft,,häufig,2026-11-15,2026-11-15-01
+v0471,in the street,in der Straße,,auf der Straße,2026-11-15,2026-11-15-01
+v0472,mouth,Mund,,Maul,2026-11-15,2026-11-15-01
+v0473,to come back,zurückkommen,,,2026-11-15,2026-11-15-01
+v0474,to be late,zu spät dran sein,,zu spät kommen,2026-11-15,2026-11-15-01
