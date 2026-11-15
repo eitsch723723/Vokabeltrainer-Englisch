@@ -22,8 +22,8 @@ Regeln:
 
 - `id` muss eindeutig und dauerhaft stabil sein.
 - `english` und `german` sind Pflichtfelder.
-- `added_at` ist das einmalige Hinzufügedatum im Format `YYYY-MM-DD`. Vorhandene Altvokabeln ohne bekanntes Datum lassen das Feld leer; neue Vokabeln erhalten beim Import das tatsächliche Datum. Korrekturen bestehender Einträge ändern das Datum nicht.
-- `batch_id` identifiziert **einen zusammengehörigen Foto-Upload** (einen Vokabelsatz). Für alle neu hochgeladenen Vokabeln eines Pakets wird dieselbe unveränderliche ID `YYYY-MM-DD-NN` eingetragen, beispielsweise `2026-11-14-01`. Bei einem weiteren Upload am selben Tag erhält das neue Paket `2026-11-14-02`. `NN` ist die zweistellige, je Tag aufsteigende Upload-Nummer. Das Datum in der Batch-ID muss mit `added_at` übereinstimmen. So lässt sich der zuletzt hochgeladene Satz auch bei mehreren Paketen am gleichen Tag eindeutig bestimmen. Alte Einträge ohne Batch-ID bleiben gültig.
+- `added_at` enthält das Datum des letzten explizit zugeordneten Foto-Uploads im Format `YYYY-MM-DD`. Vorhandene Altvokabeln ohne bekanntes Datum lassen das Feld leer; neu importierte Vokabeln erhalten das tatsächliche Upload-Datum. Bei einer bloßen Korrektur bleibt das Datum erhalten. Wird eine bereits vorhandene Vokabel ausdrücklich erneut hochgeladen und soll sie im aktuellen Lernpaket erscheinen, werden `added_at` und `batch_id` gemeinsam auf diesen Upload gesetzt; die stabile Vokabel-ID bleibt unverändert.
+- `batch_id` identifiziert **einen zusammengehörigen Foto-Upload** (einen Vokabelsatz). Alle zugehörigen Wörter – auch ausdrücklich erneut hochgeladene – tragen dieselbe ID `YYYY-MM-DD-NN`, beispielsweise `2026-11-15-01`. Bei einem weiteren Upload am selben Tag erhält das neue Paket `2026-11-15-02`. `NN` ist die zweistellige, je Tag aufsteigende Upload-Nummer. Das Datum in der Batch-ID muss mit `added_at` übereinstimmen. Da das CSV-Schema nur eine aktuelle Batch-Zuordnung pro Vokabel speichert, wird bei erneuter Zuordnung deren frühere Batch-Zugehörigkeit überschrieben. Alte Einträge ohne Batch-ID bleiben gültig.
 - Mehrere alternative korrekte Antworten werden innerhalb der jeweiligen Alternativspalte mit `|` getrennt.
 - CSV-Felder mit Kommas oder Zeilenumbrüchen müssen vollständig in doppelte Anführungszeichen gesetzt werden. Ein Anführungszeichen im Feld wird als `""` geschrieben. Fehlerhafte Anführungszeichen werden beim Laden mit Zeilennummer abgewiesen.
 - Wird eine vorhandene Vokabel korrigiert, bleibt ihre ID unverändert. Dadurch bleibt der lokale Lernstand erhalten.
@@ -37,7 +37,7 @@ Der vorgesehene Pflegeprozess ist:
 2. ChatGPT liest die englisch-deutschen Zuordnungen aus dem Bild aus.
 3. Bereits im Bild vorhandene Zuordnungen gelten als maßgebliche Übersetzungen und dürfen nicht eigenständig durch andere Übersetzungen ersetzt werden.
 4. Unsichere oder nicht eindeutig lesbare Einträge dürfen nicht stillschweigend geraten werden.
-5. ChatGPT prüft die bestehende `data/vocabulary.csv`, vermeidet doppelte Einträge und vergibt für neue Vokabeln stabile IDs. **Alle Vokabeln aus demselben Fotobatch** erhalten das tatsächliche Hinzufügedatum `added_at` und **dieselbe neue Batch-ID** (`YYYY-MM-DD-NN`). Die ID wird aus den bereits vorhandenen Batch-IDs bestimmt; bei einem zweiten Upload am selben Tag wird die Nummer hochgezählt. Korrekturen existierender Vokabeln behalten ihre bisherige ID, ihr Datum und ihre Batch-ID.
+5. ChatGPT prüft die bestehende `data/vocabulary.csv`, vermeidet doppelte Einträge und vergibt für neue Vokabeln stabile IDs. **Alle Vokabeln aus demselben Fotobatch**, einschließlich ausdrücklich erneut gelernter bestehender Vokabeln, erhalten das aktuelle Upload-Datum `added_at` und **dieselbe neue Batch-ID** (`YYYY-MM-DD-NN`). Die Batch-ID wird aus den bereits vorhandenen Batch-IDs bestimmt; bei einem zweiten Upload am selben Tag wird die Nummer hochgezählt. Bestehende Vokabeln behalten stets ihre ID und damit ihren Lernstand; vorhandene zulässige Übersetzungen werden nicht verworfen. Bloße Korrekturen ohne neue Batch-Zuordnung ändern weder Datum noch Batch-ID.
 6. ChatGPT aktualisiert die CSV im GitHub-Repository.
 7. Die App lädt die aktualisierte CSV beim nächsten Start oder über die Schaltfläche „Aktualisieren“.
 
@@ -87,7 +87,7 @@ Der gewählte Bestand bleibt über alle Zehner-Runden einer Sitzung hinweg aktiv
 
 Nach genau zehn Bewertungen wird gestoppt und die Wahl „Abfragen beenden“ oder „Weitere 10 Vokabeln“ angezeigt. Innerhalb einer Runde werden nach Möglichkeit zehn unterschiedliche Vokabeln gefragt. Einmal richtig beantwortete Vokabeln kommen in derselben Sitzung nicht mehr vor; falsch beantwortete werden in späteren Runden bevorzugt. Bei einer vollständig durchgearbeiteten kleinen Sammlung endet die Sitzung gegebenenfalls vor zehn Fragen. Die mündlichen Bewertungen beeinflussen **nicht** den gespeicherten Lernstand. Ein erneuter Start beginnt eine neue Sitzung.
 
-Die gewichtete Auswahl berücksichtigt weiterhin frühere gespeicherte Lernschwierigkeiten und Wiederholungsfälligkeit. Vokabeln mit `added_at` erhalten während der ersten 14 Tage einen linear abnehmenden Neuheitsbonus. Der Vokabelsatz v0243–v0334 wurde mit dem 5. November 2026 als neu erfasst.
+Die gewichtete Auswahl berücksichtigt weiterhin frühere gespeicherte Lernschwierigkeiten und Wiederholungsfälligkeit. Vokabeln mit `added_at` erhalten während der ersten 14 Tage einen linear abnehmenden Neuheitsbonus. Der Vokabelsatz v0243–v0334 wurde mit dem 5. November 2026 als neu erfasst. Am 15. November 2026 wurden die Seiten 185–189 als Batch `2026-11-15-01` ergänzt: 140 neue Einträge (v0335–v0474) und 10 bestehende Vokabeln erhielten das neue Upload-Datum und die neue Batch-Zuordnung.
 
 ## Tests
 
