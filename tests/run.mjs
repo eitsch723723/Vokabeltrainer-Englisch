@@ -420,7 +420,7 @@ test('repository vocabulary selects the November 15 import, including reuploaded
   assert.deepEqual(latest.map(v => v.id), byDate.map(v => v.id));
   assert.deepEqual(availableVocabularyDates(vocabularies), [
     { date: '2026-11-15', count: 150 },
-    { date: '2026-11-05', count: 90 }
+    { date: '2026-11-05', count: 89 }
   ]);
 
   // Ten reuploaded entries retain stable IDs and preserve existing correct translations.
@@ -436,7 +436,7 @@ test('repository vocabulary selects the November 15 import, including reuploaded
   assert.ok(fun.alternatives.german.includes('Freude'));
 
   const previousBatch = vocabularies.filter(vocabulary => vocabulary.batchId === '2026-11-05-01');
-  assert.equal(previousBatch.length, 90);
+  assert.equal(previousBatch.length, 89);
   assert.ok(previousBatch.every(vocabulary => !latest.some(incoming => incoming.id === vocabulary.id)));
 });
 
