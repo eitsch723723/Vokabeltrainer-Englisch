@@ -407,14 +407,37 @@ test('preview PWA cache is isolated from production', async () => {
 });
 
 
-test('repository vocabulary maps the November 5 upload to one batch', async () => {
+test('repository vocabulary selects the November 15 import, including reuploaded existing words', async () => {
   const vocabularies = parseVocabularyCsv(await readFile(new URL('../data/vocabulary.csv', import.meta.url), 'utf8'));
-  assert.equal(vocabularies.length, 334);
-  assert.equal(latestVocabularyBatchId(vocabularies), '2026-11-05-01');
-  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.LATEST).length, 92);
-  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.DATE, '2026-11-05').length, 92);
-  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.ALL).length, 334);
-  assert.equal(availableVocabularyDates(vocabularies)[0].date, '2026-11-05');
+  assert.equal(vocabularies.length, 474);
+  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.ALL).length, 474);
+  assert.equal(latestVocabularyBatchId(vocabularies), '2026-11-15-01');
+
+  const latest = selectOralVocabulary(vocabularies, ORAL_SCOPES.LATEST);
+  const byDate = selectOralVocabulary(vocabularies, ORAL_SCOPES.DATE, '2026-11-15');
+  assert.equal(latest.length, 150);
+  assert.equal(byDate.length, 150);
+  assert.deepEqual(latest.map(v => v.id), byDate.map(v => v.id));
+  assert.deepEqual(availableVocabularyDates(vocabularies), [
+    { date: '2026-11-15', count: 150 },
+    { date: '2026-11-05', count: 90 }
+  ]);
+
+  // Ten reuploaded entries retain stable IDs and preserve existing correct translations.
+  for (const id of ['v0219', 'v0296', 'v0310', 'v0236', 'v0238', 'v0278', 'v0054', 'v0055', 'v0137', 'v0150']) {
+    assert.ok(latest.some(vocabulary => vocabulary.id === id), `Reuploaded vocabulary ${id} must be included`);
+  }
+  const home = latest.find(vocabulary => vocabulary.id === 'v0219');
+  assert.equal(home.german, 'Zuhause');
+  assert.ok(home.alternatives.german.includes('nach Hause'));
+  const fun = latest.find(vocabulary => vocabulary.id === 'v0310');
+  assert.equal(fun.german, 'lustig');
+  assert.ok(fun.alternatives.german.includes('Spaß'));
+  assert.ok(fun.alternatives.german.includes('Freude'));
+
+  const previousBatch = vocabularies.filter(vocabulary => vocabulary.batchId === '2026-11-05-01');
+  assert.equal(previousBatch.length, 90);
+  assert.ok(previousBatch.every(vocabulary => !latest.some(incoming => incoming.id === vocabulary.id)));
 });
 
 test('a latest upload is distinct from other uploads on the same date', () => {
