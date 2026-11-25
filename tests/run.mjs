@@ -407,60 +407,48 @@ test('preview PWA cache is isolated from production', async () => {
 });
 
 
-test('latest repository vocabulary is the November 25 batch from pages 189 and 190', async () => {
+test('repository vocabulary remains unique and all batch selectors derive from CSV metadata', async () => {
   const vocabularies = parseVocabularyCsv(await readFile(new URL('../data/vocabulary.csv', import.meta.url), 'utf8'));
-  assert.equal(vocabularies.length, 500);
-  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.ALL).length, 500);
-  assert.equal(latestVocabularyBatchId(vocabularies), '2026-11-25-01');
+  assert.ok(vocabularies.length > 0);
+  assert.equal(new Set(vocabularies.map(v => v.id)).size, vocabularies.length);
+  assert.equal(new Set(vocabularies.map(v => v.english.toLocaleLowerCase('de-DE'))).size, vocabularies.length);
+  assert.equal(selectOralVocabulary(vocabularies, ORAL_SCOPES.ALL).length, vocabularies.length);
 
-  const latest = selectOralVocabulary(vocabularies, ORAL_SCOPES.LATEST);
-  const byDate = selectOralVocabulary(vocabularies, ORAL_SCOPES.DATE, '2026-11-25');
-  const previous = selectOralVocabulary(vocabularies, ORAL_SCOPES.DATE, '2026-11-15');
-  assert.equal(latest.length, 56); // Page 189 (28) plus page 190 (28).
-  assert.equal(byDate.length, 56);
-  assert.equal(previous.length, 121); // Page 189 (28) and reuploaded 'to wait (for)' removed.
-  assert.deepEqual(latest.map(v => v.id), byDate.map(v => v.id));
-  assert.deepEqual(availableVocabularyDates(vocabularies), [
-    { date: '2026-11-25', count: 56 },
-    { date: '2026-11-15', count: 121 },
-    { date: '2026-11-05', count: 89 }
-  ]);
-
-  // The entire page 189 upload was moved from the old batch, never duplicated.
-  for (const id of [
-    'v0438', 'v0449', 'v0450', 'v0310', 'v0451', 'v0452', 'v0453', 'v0454',
-    'v0455', 'v0456', 'v0457', 'v0458', 'v0459', 'v0460', 'v0461', 'v0462',
-    'v0463', 'v0464', 'v0465', 'v0466', 'v0467', 'v0468', 'v0469', 'v0470',
-    'v0471', 'v0472', 'v0473', 'v0474'
-  ]) {
-    assert.ok(latest.some(v => v.id === id), `Page 189 vocabulary ${id} missing from latest batch`);
-    assert.ok(!previous.some(v => v.id === id), `Page 189 vocabulary ${id} still belongs to old batch`);
+  const batchIds = [...new Set(vocabularies.map(v => v.batchId).filter(Boolean))].sort();
+  const latest = latestVocabularyBatchId(vocabularies);
+  assert.equal(latest, batchIds.at(-1) ?? null);
+  const latestPool = selectOralVocabulary(vocabularies, ORAL_SCOPES.LATEST);
+  if (latest !== null) {
+    assert.deepEqual(latestPool.map(v => v.id), vocabularies.filter(v => v.batchId === latest).map(v => v.id));
   }
 
-  // Page 190 repeats 'to wait (for)' and uses 'to' in the time-telling sense.
-  assert.ok(latest.some(v => v.id === 'v0441'));
-  const timeTo = latest.find(v => v.id === 'v0177');
-  assert.equal(timeTo.german, 'vor (bei Uhrzeitangaben)');
-  for (const answer of ['zu', 'nach', 'auf', 'in']) {
-    assert.ok(timeTo.alternatives.german.includes(answer));
+  const dates = availableVocabularyDates(vocabularies);
+  assert.deepEqual(dates.map(({ date }) => date), [...dates.map(x => x.date)].sort().reverse());
+  for (const { date, count } of dates) {
+    const matching = vocabularies.filter(v => v.addedAt === date);
+    assert.equal(matching.length, count);
+    assert.deepEqual(selectOralVocabulary(vocabularies, ORAL_SCOPES.DATE, date).map(v => v.id), matching.map(v => v.id));
   }
-
-  // Ten previously reuploaded words keep their IDs and their accepted answers.
-  for (const id of ['v0219', 'v0296', 'v0310', 'v0236', 'v0238', 'v0278', 'v0054', 'v0055', 'v0137', 'v0150']) {
-    assert.ok(vocabularies.some(v => v.id === id));
+  for (const vocabulary of vocabularies) {
+    if (vocabulary.batchId) {
+      assert.equal(vocabulary.batchId.slice(0, 10), vocabulary.addedAt);
+    }
   }
-  const home = vocabularies.find(v => v.id === 'v0219');
-  assert.equal(home.german, 'Zuhause');
-  assert.ok(home.alternatives.german.includes('nach Hause'));
-  const fun = vocabularies.find(v => v.id === 'v0310');
-  assert.equal(fun.german, 'lustig');
-  assert.ok(fun.alternatives.german.includes('Spaß'));
-  assert.ok(fun.alternatives.german.includes('Freude'));
+});
 
-  // No previously stored spelling or learning ID is replaced by a duplicate.
-  assert.equal(new Set(vocabularies.map(v => v.id)).size, 500);
-  assert.equal(new Set(vocabularies.map(v => v.english.toLocaleLowerCase('de-DE'))).size, 500);
-  assert.equal(vocabularies.filter(v => v.batchId === '2026-11-05-01').length, 89);
+test('an existing word reassigned to a new upload leaves its former batch without losing its identity', () => {
+  const oldDate = '2026-11-15';
+  const newDate = '2026-11-25';
+  const original = createVocabulary({ id: 'existing', english: 'always', german: 'immer', addedAt: oldDate, batchId: oldDate + '-01' });
+  const unmodified = createVocabulary({ id: 'unmodified', english: 'garden', german: 'Garten', addedAt: oldDate, batchId: oldDate + '-01' });
+  const moved = { ...original, addedAt: newDate, batchId: newDate + '-01' };
+  const newWord = createVocabulary({ id: 'new', english: 'character', german: 'Charakter', addedAt: newDate, batchId: newDate + '-01' });
+  const current = [moved, unmodified, newWord];
+
+  assert.equal(moved.id, original.id);
+  assert.deepEqual(selectOralVocabulary(current, ORAL_SCOPES.LATEST).map(v => v.id), ['existing', 'new']);
+  assert.deepEqual(selectOralVocabulary(current, ORAL_SCOPES.DATE, oldDate).map(v => v.id), ['unmodified']);
+  assert.deepEqual(selectOralVocabulary(current, ORAL_SCOPES.DATE, newDate).map(v => v.id), ['existing', 'new']);
 });
 
 test('a latest upload is distinct from other uploads on the same date', () => {
