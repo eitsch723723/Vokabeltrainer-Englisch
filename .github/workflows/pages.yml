@@ -49,6 +49,10 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      # GitHub may not list a newly uploaded Pages artifact immediately.
+      # Without a short pause, deploy-pages can report "No artifacts named github-pages".
+      - name: Allow Pages artifact metadata to propagate
+        run: sleep 15
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
