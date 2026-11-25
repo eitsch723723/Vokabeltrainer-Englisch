@@ -175,7 +175,7 @@ v0173,house,Haus,,,,
 v0174,bored,gelangweilt,,,,
 v0175,Let's ...,Lass uns ...,,Lasst uns ...,,
 v0176,to go (to),gehen (zu/nach),,fahren (zu/nach),,
-v0177,to,zu,,nach|auf|in,,
+v0177,to,vor (bei Uhrzeitangaben),,zu|nach|auf|in,2026-11-25,2026-11-25-01
 v0178,fine,gut,,in Ordnung|schön,,
 v0179,Thanks.,Danke.,,,,
 v0180,this,dies,,diese/-r/-s,,
@@ -308,7 +308,7 @@ v0306,audio,Audio-,,Hör-,2026-11-05,2026-11-05-01
 v0307,work,Arbeit,,,2026-11-05,2026-11-05-01
 v0308,before,vor (zeitlich),,bevor,2026-11-05,2026-11-05-01
 v0309,at home,zu Hause,,,2026-11-05,2026-11-05-01
-v0310,fun,lustig,,witzig|fröhlich|Freude|Spaß,2026-11-15,2026-11-15-01
+v0310,fun,lustig,,witzig|fröhlich|Freude|Spaß,2026-11-25,2026-11-25-01
 v0311,Be careful!,Vorsicht!,,Pass auf!|Passt auf!,2026-11-05,2026-11-05-01
 v0312,expensive,teuer,,,2026-11-05,2026-11-05-01
 v0313,sound,Ton,,Geräusch|Klang,2026-11-05,2026-11-05-01
@@ -436,10 +436,10 @@ v0434,poem,Gedicht,,,2026-11-15,2026-11-15-01
 v0435,tall,groß,,hoch,2026-11-15,2026-11-15-01
 v0436,tea,Tee,,,2026-11-15,2026-11-15-01
 v0437,to stay,bleiben,,,2026-11-15,2026-11-15-01
-v0438,always,immer,,ständig,2026-11-15,2026-11-15-01
+v0438,always,immer,,ständig,2026-11-25,2026-11-25-01
 v0439,to be early,früh dran sein,,,2026-11-15,2026-11-15-01
 v0440,to hurry,eilen,,sich beeilen,2026-11-15,2026-11-15-01
-v0441,to wait (for),warten (auf),to wait for,,2026-11-15,2026-11-15-01
+v0441,to wait (for),warten (auf),to wait for,,2026-11-25,2026-11-25-01
 v0442,to agree (with),einer Meinung sein (mit),to agree with,zustimmen,2026-11-15,2026-11-15-01
 v0443,to love,lieben,,gern mögen,2026-11-15,2026-11-15-01
 v0444,Mr,Herr (Anrede),,,2026-11-15,2026-11-15-01
@@ -447,29 +447,55 @@ v0445,cooking,Kochen,,,2026-11-15,2026-11-15-01
 v0446,now,jetzt,,nun,2026-11-15,2026-11-15-01
 v0447,music,Musik,,,2026-11-15,2026-11-15-01
 v0448,guitar,Gitarre,,,2026-11-15,2026-11-15-01
-v0449,every,jede/-r/-s,,,2026-11-15,2026-11-15-01
-v0450,afternoon,Nachmittag,,,2026-11-15,2026-11-15-01
-v0451,little,klein,,,2026-11-15,2026-11-15-01
-v0452,to be wrong,unrecht haben,,sich irren,2026-11-15,2026-11-15-01
-v0453,skateboarding,Skateboardfahren,,,2026-11-15,2026-11-15-01
-v0454,sometimes,manchmal,,,2026-11-15,2026-11-15-01
-v0455,wheelchair,Rollstuhl,,,2026-11-15,2026-11-15-01
-v0456,to miss,vermissen,,,2026-11-15,2026-11-15-01
-v0457,It gets on my nerves!,Es geht mir auf die Nerven!,,,2026-11-15,2026-11-15-01
-v0458,past,nach (bei Uhrzeitangaben),,,2026-11-15,2026-11-15-01
-v0459,to start,anfangen,,beginnen|starten,2026-11-15,2026-11-15-01
-v0460,to know,kennen,,wissen,2026-11-15,2026-11-15-01
-v0461,head,Kopf,,,2026-11-15,2026-11-15-01
-v0462,very,sehr,,,2026-11-15,2026-11-15-01
-v0463,of course,natürlich,,selbstverständlich,2026-11-15,2026-11-15-01
-v0464,never,nie,,niemals,2026-11-15,2026-11-15-01
-v0465,to lose,verlieren,,,2026-11-15,2026-11-15-01
-v0466,usually,normalerweise,,gewöhnlich|meistens,2026-11-15,2026-11-15-01
-v0467,to put,setzen,,stellen|legen,2026-11-15,2026-11-15-01
-v0468,busy,beschäftigt,,,2026-11-15,2026-11-15-01
-v0469,lots (of),viel/-e,lots of,jede Menge,2026-11-15,2026-11-15-01
-v0470,often,oft,,häufig,2026-11-15,2026-11-15-01
-v0471,in the street,in der Straße,,auf der Straße,2026-11-15,2026-11-15-01
-v0472,mouth,Mund,,Maul,2026-11-15,2026-11-15-01
-v0473,to come back,zurückkommen,,,2026-11-15,2026-11-15-01
-v0474,to be late,zu spät dran sein,,zu spät kommen,2026-11-15,2026-11-15-01
+v0449,every,jede/-r/-s,,,2026-11-25,2026-11-25-01
+v0450,afternoon,Nachmittag,,,2026-11-25,2026-11-25-01
+v0451,little,klein,,,2026-11-25,2026-11-25-01
+v0452,to be wrong,unrecht haben,,sich irren,2026-11-25,2026-11-25-01
+v0453,skateboarding,Skateboardfahren,,,2026-11-25,2026-11-25-01
+v0454,sometimes,manchmal,,,2026-11-25,2026-11-25-01
+v0455,wheelchair,Rollstuhl,,,2026-11-25,2026-11-25-01
+v0456,to miss,vermissen,,,2026-11-25,2026-11-25-01
+v0457,It gets on my nerves!,Es geht mir auf die Nerven!,,,2026-11-25,2026-11-25-01
+v0458,past,nach (bei Uhrzeitangaben),,,2026-11-25,2026-11-25-01
+v0459,to start,anfangen,,beginnen|starten,2026-11-25,2026-11-25-01
+v0460,to know,kennen,,wissen,2026-11-25,2026-11-25-01
+v0461,head,Kopf,,,2026-11-25,2026-11-25-01
+v0462,very,sehr,,,2026-11-25,2026-11-25-01
+v0463,of course,natürlich,,selbstverständlich,2026-11-25,2026-11-25-01
+v0464,never,nie,,niemals,2026-11-25,2026-11-25-01
+v0465,to lose,verlieren,,,2026-11-25,2026-11-25-01
+v0466,usually,normalerweise,,gewöhnlich|meistens,2026-11-25,2026-11-25-01
+v0467,to put,setzen,,stellen|legen,2026-11-25,2026-11-25-01
+v0468,busy,beschäftigt,,,2026-11-25,2026-11-25-01
+v0469,lots (of),viel/-e,lots of,jede Menge,2026-11-25,2026-11-25-01
+v0470,often,oft,,häufig,2026-11-25,2026-11-25-01
+v0471,in the street,in der Straße,,auf der Straße,2026-11-25,2026-11-25-01
+v0472,mouth,Mund,,Maul,2026-11-25,2026-11-25-01
+v0473,to come back,zurückkommen,,,2026-11-25,2026-11-25-01
+v0474,to be late,zu spät dran sein,,zu spät kommen,2026-11-25,2026-11-25-01
+v0475,character,Charakter,,Figur,2026-11-25,2026-11-25-01
+v0476,freeze frame,Standbild,,,2026-11-25,2026-11-25-01
+v0477,helpless,hilflos,,,2026-11-25,2026-11-25-01
+v0478,confused,verwirrt,,wirr|konfus,2026-11-25,2026-11-25-01
+v0479,What's the time?,Wie spät ist es?,,Wie viel Uhr ist es?,2026-11-25,2026-11-25-01
+v0480,time,Uhrzeit,,,2026-11-25,2026-11-25-01
+v0481,o'clock,Uhr (Zeitangabe bei vollen Stunden),,,2026-11-25,2026-11-25-01
+v0482,half,halb,,,2026-11-25,2026-11-25-01
+v0483,quarter past/to,Viertel nach/vor,,,2026-11-25,2026-11-25-01
+v0484,scene,Szene,,,2026-11-25,2026-11-25-01
+v0485,to get up,aufstehen,,,2026-11-25,2026-11-25-01
+v0486,to have breakfast,frühstücken,,,2026-11-25,2026-11-25-01
+v0487,dinner,Abendessen,,,2026-11-25,2026-11-25-01
+v0488,to go to bed,ins Bett gehen,,,2026-11-25,2026-11-25-01
+v0489,then,dann,,danach,2026-11-25,2026-11-25-01
+v0490,in the evenings,abends,,,2026-11-25,2026-11-25-01
+v0491,evening,Abend,,,2026-11-25,2026-11-25-01
+v0492,on Mondays,montags,,,2026-11-25,2026-11-25-01
+v0493,Monday,Montag,,,2026-11-25,2026-11-25-01
+v0494,Tuesday,Dienstag,,,2026-11-25,2026-11-25-01
+v0495,Wednesday,Mittwoch,,,2026-11-25,2026-11-25-01
+v0496,Thursday,Donnerstag,,,2026-11-25,2026-11-25-01
+v0497,Friday,Freitag,,,2026-11-25,2026-11-25-01
+v0498,Saturday,Samstag,,,2026-11-25,2026-11-25-01
+v0499,Sunday,Sonntag,,,2026-11-25,2026-11-25-01
+v0500,to tell,erzählen,,sagen|mitteilen,2026-11-25,2026-11-25-01
